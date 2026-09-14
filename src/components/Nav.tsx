@@ -11,6 +11,7 @@ const ITEMS = [
   { href: "/alerts", label: "Alerts", icon: "◉" },
   { href: "/engine", label: "Search Engine Status", icon: "⟳" },
   { href: "/profiles", label: "Travel Profiles", icon: "▣" },
+  { href: "/calendar", label: "Calendar", icon: "▦" },
   { href: "/automation", label: "Automation", icon: "⚙" },
   { href: "/settings", label: "Settings", icon: "≡" },
   { href: "/health", label: "System Health", icon: "♥" },

@@ -56,20 +56,31 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 
 - [x] Modèle Airport prêt pour aéroports alternatifs (priorité, coût/temps d'accès, seuil
       d'économie minimum)
-- [ ] Calcul "Real Departure Cost" (comparaison aéroports alternatifs avec coût réel)
-- [ ] True Trip Cost complet (parking, transfert, hôtel de départ) — modèles de données à
-      créer
-- [ ] Open-jaw / multi-city / stopovers
-- [x] Détection self-transfer (pénalisée dans Flight Quality Score) — approfondissement
-      possible (fiabilité par aéroport)
+- [x] Calcul "Real Departure Cost" (`src/lib/departure/realDepartureCost.ts`) —
+      comparaison des aéroports alternatifs, recommandation seulement si l'économie
+      dépasse le seuil propre à l'aéroport alternatif. Affiché sur la page détail d'un
+      deal. Testé (cas Milan -80€ ignoré / -500€ recommandé, section 3).
+- [x] True Trip Cost (billet + coût d'accès à l'aéroport, calculé à la volée — pas de
+      persistance DB prématurée tant qu'aucune source hôtel/parking/transfert n'existe).
+      Affiché sur la page détail d'un deal, avec mention explicite de ce qui manque.
+- [ ] Open-jaw / multi-city / stopovers (non commencé — architecture à prévoir quand un
+      cas d'usage concret se présente, pour éviter le sur-engineering)
+- [x] Détection self-transfer (pénalisée dans Flight Quality Score, affichée en badge sur
+      le détail du deal)
 
 ## PHASE 7 — Autonomy
 
-- [x] Calendrier interne simple (`CalendarBlock`)
+- [x] Calendrier interne simple (`CalendarBlock`) + **UI complète** (`/calendar`, ajout/
+      suppression de périodes bloquantes)
+- [x] Détection de conflit calendrier (`src/lib/calendar/conflicts.ts`), branchée sur le
+      détail d'un deal (badge d'avertissement) et sur l'évaluation du mandat d'achat
 - [ ] Intégration Google Calendar (nécessite OAuth — **action utilisateur requise**)
 - [x] Purchase Policy Engine (4 modes, kill switch, mandat déterministe)
 - [x] Tests du Purchase Policy Engine (cas limites du cahier des charges)
-- [ ] Approval flow UI (mode APPROVAL_REQUIRED avec validation humaine explicite)
+- [x] Approval flow UI (page Automation : liste des deals actifs évalués contre le mandat,
+      bouton "Approuver (simulation)" visible seulement en mode APPROVAL_REQUIRED —
+      n'effectue **aucune réservation réelle**, enregistre uniquement une décision dans
+      `PurchaseAuditLog` avec `decision = SIMULATED`)
 - [ ] Booking API (nécessite un partenaire de réservation + moyen de paiement —
       **action utilisateur requise, hors périmètre tant que non demandé explicitement**)
 

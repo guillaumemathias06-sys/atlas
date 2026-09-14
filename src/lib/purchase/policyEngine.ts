@@ -7,8 +7,8 @@
 //   1. killSwitchEngaged === false (le kill switch est désactivé par défaut = ON)
 //   2. mode === AUTONOMOUS_PURCHASE (désactivé par défaut, l'utilisateur doit le choisir)
 //   3. TOUTES les conditions du mandat sont vraies.
-// L'IA n'a aucun pouvoir de contourner ces règles : evaluate() est une pure
-// fonction déterministe, sans appel LLM.
+// L'IA n'a aucun pouvoir de contourner ces règles : evaluate*() sont des fonctions
+// pures et déterministes, sans appel LLM.
 import type { PurchaseMode } from "@/types";
 
 export interface PurchaseMandate {
@@ -45,7 +45,13 @@ export interface PolicyDecision {
   reasons: string[]; // toutes les règles évaluées, avec verdict
 }
 
-export function evaluatePurchase(mandate: PurchaseMandate, candidate: PurchaseCandidate): PolicyDecision {
+/**
+ * Évalue uniquement les critères du mandat (prix, scores, escales, budget, calendrier…),
+ * SANS tenir compte du mode ni du kill switch. Utilisé pour afficher, en mode
+ * APPROVAL_REQUIRED ou ALERT, "quels deals rempliraient les conditions" sans jamais
+ * impliquer qu'un achat réel pourrait se déclencher.
+ */
+export function evaluateMandateCriteria(mandate: PurchaseMandate, candidate: PurchaseCandidate): PolicyDecision {
   const reasons: string[] = [];
   let approved = true;
 
@@ -53,10 +59,6 @@ export function evaluatePurchase(mandate: PurchaseMandate, candidate: PurchaseCa
     reasons.push(`${condition ? "OK" : "REJET"} — ${label}`);
     if (!condition) approved = false;
   }
-
-  // Le kill switch et le mode priment sur tout le reste.
-  check(!mandate.killSwitchEngaged, "kill switch désactivé");
-  check(mandate.mode === "AUTONOMOUS_PURCHASE", "mode = AUTONOMOUS_PURCHASE");
 
   check(candidate.pricePerPersonEUR <= mandate.maxPricePerPersonEUR, `prix/personne ≤ ${mandate.maxPricePerPersonEUR}€`);
   check(candidate.bookingTotalEUR <= mandate.maxBookingTotalEUR, `total réservation ≤ ${mandate.maxBookingTotalEUR}€`);
@@ -88,4 +90,30 @@ export function evaluatePurchase(mandate: PurchaseMandate, candidate: PurchaseCa
   }
 
   return { approved, reasons };
+}
+
+/**
+ * Évaluation complète = kill switch + mode + TOUS les critères du mandat.
+ * C'est la SEULE fonction qui déterminerait, en théorie, qu'un achat autonome
+ * pourrait avoir lieu — et même son `approved === true` ne déclenche rien tant
+ * qu'aucune intégration de paiement/réservation n'existe dans le code.
+ */
+export function evaluatePurchase(mandate: PurchaseMandate, candidate: PurchaseCandidate): PolicyDecision {
+  const gate: PolicyDecision = { approved: true, reasons: [] };
+
+  function check(condition: boolean, label: string) {
+    gate.reasons.push(`${condition ? "OK" : "REJET"} — ${label}`);
+    if (!condition) gate.approved = false;
+  }
+
+  // Le kill switch et le mode priment sur tout le reste.
+  check(!mandate.killSwitchEngaged, "kill switch désactivé");
+  check(mandate.mode === "AUTONOMOUS_PURCHASE", "mode = AUTONOMOUS_PURCHASE");
+
+  const mandateResult = evaluateMandateCriteria(mandate, candidate);
+
+  return {
+    approved: gate.approved && mandateResult.approved,
+    reasons: [...gate.reasons, ...mandateResult.reasons],
+  };
 }

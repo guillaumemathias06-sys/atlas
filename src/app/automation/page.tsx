@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
-import { Card, CardHeader, Badge, Button } from "@/components/ui";
-import { updatePurchasePolicy } from "@/lib/actions";
+import { Card, CardHeader, Badge, Button, EmptyState } from "@/components/ui";
+import { updatePurchasePolicy, recordApprovalDecision } from "@/lib/actions";
+import { getEligibleCandidates } from "@/lib/purchase/candidates";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,8 @@ const MODE_DESCRIPTIONS: Record<string, string> = {
 export default async function AutomationPage() {
   const policy = await prisma.purchasePolicy.findUniqueOrThrow({ where: { id: "singleton" } });
   const recentAudit = await prisma.purchaseAuditLog.findMany({ orderBy: { createdAt: "desc" }, take: 10 });
+  const candidates = await getEligibleCandidates(10);
+  const eligible = candidates.filter((c) => c.decision.approved);
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-8">
@@ -106,6 +109,49 @@ export default async function AutomationPage() {
           <Button type="submit">Enregistrer le mandat</Button>
         </div>
       </form>
+
+      <Card className="mt-6">
+        <CardHeader
+          title="Candidats évalués contre le mandat"
+          subtitle={`${eligible.length} deal(s) rempliraient toutes les conditions du mandat en ce moment`}
+        />
+        {candidates.length === 0 ? (
+          <div className="p-6"><EmptyState title="Aucun deal actif à évaluer" /></div>
+        ) : (
+          <div className="divide-y divide-atlas-border/60">
+            {candidates.map((c) => (
+              <div key={c.dealId} className="flex items-center justify-between gap-4 px-5 py-3">
+                <div>
+                  <a href={`/deals/${c.dealId}`} className="text-sm text-atlas-text hover:text-atlas-accent">
+                    {c.originIata} → {c.destinationCity} ({c.destinationIata})
+                  </a>
+                  <p className="text-xs text-atlas-muted">{Math.round(c.priceEUR)}€ · ATLAS {Math.round(c.atlasScore)} · Season {Math.round(c.seasonScore)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge tone={c.decision.approved ? "good" : "neutral"}>
+                    {c.decision.approved ? "éligible au mandat" : `${c.decision.reasons.filter((r) => r.startsWith("REJET")).length} critère(s) manquant(s)`}
+                  </Badge>
+                  {c.decision.approved && policy.mode === "APPROVAL_REQUIRED" && (
+                    <>
+                      <form action={recordApprovalDecision.bind(null, c.dealId, "APPROVE", c.decision.reasons)}>
+                        <Button variant="ghost" type="submit" className="text-xs">Approuver (simulation)</Button>
+                      </form>
+                      <form action={recordApprovalDecision.bind(null, c.dealId, "REJECT", c.decision.reasons)}>
+                        <Button variant="ghost" type="submit" className="text-xs">Rejeter</Button>
+                      </form>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="border-t border-atlas-border px-5 py-3 text-[11px] text-atlas-muted">
+          "Approuver" n'effectue aucune réservation réelle (aucune intégration de paiement n'existe) — cela enregistre
+          uniquement une décision simulée dans le journal d'audit ci-dessous, pour préparer le futur flux
+          APPROVAL_REQUIRED.
+        </p>
+      </Card>
 
       <Card className="mt-6">
         <CardHeader title="Journal d'audit des décisions d'achat" />

@@ -43,3 +43,24 @@ Candidats recommandés, par ordre de préférence :
 **Ce point bloque uniquement la Phase 5, jamais le reste du projet** : tant qu'aucune clé
 n'est configurée, `UserSettings.simulationMode` reste `true` et ATLAS continue de
 fonctionner intégralement en mock.
+
+## ⚠️ Coût réel des recherches — à lire avant de connecter un provider
+
+Duffel (et la plupart des providers) facture au-delà d'un **ratio recherche/réservation**
+(ex. 1500 recherches pour 1 réservation, puis un coût par recherche excédentaire), en plus
+des frais par commande. Or le principe même d'ATLAS (section 2 et 5) est de **scanner en
+continu sans jamais réserver** — le ratio recherche/réservation d'ATLAS sera donc
+structurellement très supérieur à ces seuils dès que le moteur tourne à pleine cadence sur
+plusieurs aéroports × destinations × dates.
+
+Conséquences pour la Phase 5, quand elle sera activée :
+
+- Le passage en provider réel doit se faire avec une **fréquence de scan volontairement
+  réduite** au départ (`SearchTask.frequencyHours` plus élevé, moins de routes actives),
+  pas au rythme du mode mock qui est gratuit et donc sans contrainte de volume.
+- Envisager un **cache agressif** (ne pas re-rechercher une route scannée il y a moins de
+  N heures) et un **plafond de recherches/jour** configurable avant d'activer un provider
+  payant.
+- **Connecter un provider réel = dépense réelle progressive.** Conformément aux règles de
+  sécurité du projet, cette bascule ne sera jamais faite automatiquement : elle nécessite
+  ta clé API ET ta confirmation explicite, quel que soit l'état du reste du roadmap.

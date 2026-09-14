@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-09-14 (soir) — Phase 6/7 : coûts réels, calendrier, flux d'approbation
+
+- **Real Departure Cost** (section 18) : comparaison des aéroports de départ alternatifs
+  sur le coût réel (billet + accès), recommandation seulement si l'économie dépasse le
+  seuil propre à l'alternative. Affiché sur le détail d'un deal.
+- **True Trip Cost** (section 17) : billet + coût d'accès à l'aéroport, calculé à la volée
+  (pas de nouveau modèle DB tant qu'aucune source hôtel/parking/transfert n'existe).
+- **Calendrier interne** : UI complète (`/calendar`), détection de conflit branchée sur le
+  détail d'un deal et sur l'évaluation du mandat d'achat.
+- **Flux d'approbation** (section 21, mode APPROVAL_REQUIRED) : la page Automation liste
+  les deals actifs évalués contre le mandat et permet une "approbation" qui n'est qu'une
+  entrée d'audit simulée — toujours aucune réservation réelle possible.
+- **Refactor sécurité** : `policyEngine.ts` sépare désormais `evaluateMandateCriteria`
+  (critères seuls, réutilisable pour l'aperçu d'éligibilité) de `evaluatePurchase` (ajoute
+  la vérification kill switch + mode) — une seule source de vérité pour les deux usages.
+- **Correctif fuseau horaire** : le planificateur de scans normalisait les dates de voyage
+  en minuit *local* (heure du serveur) alors que le calendrier et les formulaires
+  utilisent l'UTC — décalage silencieux de quelques heures pouvant fausser la détection de
+  conflit calendrier près des limites de journée. Toutes les dates de voyage sont
+  désormais normalisées en UTC de bout en bout.
+- 7 nouveaux tests unitaires (calendrier, Real Departure Cost) — 30 tests au total, tous
+  verts. Documenté dans `docs/providers.md` : le ratio recherche/réservation facturé par
+  les providers réels (ex. Duffel) est structurellement dépassé par le design d'ATLAS
+  (scan continu sans réservation) — implique fréquence de scan réduite et cache agressif
+  avant toute connexion à un provider payant.
+
 ## 2026-09-14 — V1 initiale
 
 - Architecture Next.js 14 + TypeScript strict + Prisma/SQLite + Tailwind.

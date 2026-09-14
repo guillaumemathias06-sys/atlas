@@ -4,9 +4,13 @@
 import { prisma } from "@/lib/db";
 import { minStayDaysFor } from "@/lib/duration/rules";
 
+// Toutes les dates de voyage sont normalisées en UTC (jamais en heure locale du serveur) :
+// UserSettings.durationRules, CalendarBlock et le formulaire <input type="date"> sont tous
+// parsés/produits en UTC. Mélanger UTC et heure locale créerait un décalage silencieux de
+// quelques heures près des limites de journée, faussant la détection de conflit calendrier.
 function addDays(date: Date, days: number): Date {
   const d = new Date(date);
-  d.setDate(d.getDate() + days);
+  d.setUTCDate(d.getUTCDate() + days);
   return d;
 }
 
@@ -42,7 +46,7 @@ export async function planScans(maxNewTasks = 60): Promise<{ created: number }> 
 
       for (const offsetDays of departOffsets) {
         const departDate = addDays(now, offsetDays);
-        departDate.setHours(0, 0, 0, 0);
+        departDate.setUTCHours(0, 0, 0, 0);
         const returnDate = addDays(departDate, tripLengthDays);
 
         const existing = await prisma.searchTask.findFirst({

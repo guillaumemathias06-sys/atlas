@@ -128,3 +128,36 @@ export async function updatePurchasePolicy(formData: FormData) {
   });
   revalidatePath("/automation");
 }
+
+export async function addCalendarBlock(formData: FormData) {
+  const startDate = new Date(String(formData.get("startDate")));
+  const endDate = new Date(String(formData.get("endDate")));
+  const label = String(formData.get("label") ?? "").trim();
+  const blocking = formData.get("blocking") === "on";
+
+  if (!label || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return;
+
+  await prisma.calendarBlock.create({ data: { startDate, endDate, label, blocking } });
+  await prisma.auditLog.create({ data: { action: "CALENDAR_BLOCK_ADDED", metadata: JSON.stringify({ label }) } });
+  revalidatePath("/calendar");
+}
+
+export async function deleteCalendarBlock(id: string) {
+  await prisma.calendarBlock.delete({ where: { id } });
+  revalidatePath("/calendar");
+}
+
+/**
+ * Flux d'approbation (mode APPROVAL_REQUIRED, section 21) : enregistre une décision dans
+ * le journal d'audit. Ceci NE RÉSERVE RIEN — aucune intégration de paiement n'existe.
+ * C'est une trace de ce que l'utilisateur aurait approuvé, rien de plus.
+ */
+export async function recordApprovalDecision(dealId: string, action: "APPROVE" | "REJECT", reasons: string[]) {
+  const policy = await prisma.purchasePolicy.findUniqueOrThrow({ where: { id: "singleton" } });
+  const decision = action === "APPROVE" ? "SIMULATED" : "REJECTED"; // jamais "APPROVED" : aucune réservation réelle n'existe
+  await prisma.purchaseAuditLog.create({
+    data: { dealId, decision, reasons: JSON.stringify(reasons), mode: policy.mode },
+  });
+  await prisma.auditLog.create({ data: { action: "APPROVAL_DECISION", metadata: JSON.stringify({ dealId, decision }) } });
+  revalidatePath("/automation");
+}
