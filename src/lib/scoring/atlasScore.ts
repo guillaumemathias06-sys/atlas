@@ -19,6 +19,41 @@ export const DEFAULT_WEIGHTS: AtlasWeights = {
   weightPreference: 0.1,
 };
 
+/**
+ * Applique le biais du profil de voyage actif (section 13) aux pondérations ATLAS :
+ * comfortWeight augmente le poids de Flight Quality, priceWeight augmente celui de Fare
+ * Intelligence — la somme totale des poids est préservée (juste redistribuée), donc
+ * l'échelle du score final n'est pas affectée par le choix de profil.
+ * comfortWeight/priceWeight attendus dans [0,1] (0 = ignore, 1 = priorité maximale).
+ */
+export function applyProfileBias(weights: AtlasWeights, comfortWeight: number, priceWeight: number): AtlasWeights {
+  const total =
+    weights.weightFare + weights.weightSeason + weights.weightExperience +
+    weights.weightFlight + weights.weightDuration + weights.weightPreference;
+
+  const biased: AtlasWeights = {
+    ...weights,
+    weightFare: weights.weightFare * (0.5 + clamp(priceWeight, 0, 1)),
+    weightFlight: weights.weightFlight * (0.5 + clamp(comfortWeight, 0, 1)),
+  };
+
+  const biasedTotal =
+    biased.weightFare + biased.weightSeason + biased.weightExperience +
+    biased.weightFlight + biased.weightDuration + biased.weightPreference;
+
+  if (biasedTotal <= 0) return weights;
+  const scale = total / biasedTotal;
+
+  return {
+    weightFare: biased.weightFare * scale,
+    weightSeason: biased.weightSeason * scale,
+    weightExperience: biased.weightExperience * scale,
+    weightFlight: biased.weightFlight * scale,
+    weightDuration: biased.weightDuration * scale,
+    weightPreference: biased.weightPreference * scale,
+  };
+}
+
 export interface AtlasScoreInputs {
   fareScore: number;
   seasonScore: number;

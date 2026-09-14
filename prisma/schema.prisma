@@ -278,8 +278,9 @@ model TravelProfile {
 model UserSettings {
   id  String @id @default("singleton")
 
-  // Aéroports & destinations
-  preferredOriginIatas   String  @default("[]") // JSON array
+  // Aéroports & destinations — les aéroports de DÉPART sont gérés au niveau de chaque
+  // Airport (isOrigin/allowed/priority, section 3), plus granulaire qu'une simple liste
+  // ici ; seules les destinations sont gérées comme préférences globales.
   bannedDestinationIatas String  @default("[]")
   priorityDestinationIatas String @default("[]")
   favoriteRegions        String  @default("[]")

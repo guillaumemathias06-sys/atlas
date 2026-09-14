@@ -10,7 +10,7 @@ import { computeFlightQualityScore } from "@/lib/scoring/flightQualityScore";
 import { computePreferenceScore } from "@/lib/scoring/preferenceScore";
 import { durationFitScore } from "@/lib/duration/rules";
 import type { DurationRule } from "@/types";
-import { computeAtlasScore, generateExplanation, type AtlasWeights } from "@/lib/scoring/atlasScore";
+import { computeAtlasScore, generateExplanation, applyProfileBias, type AtlasWeights } from "@/lib/scoring/atlasScore";
 import { maybeCreateAlert, type AlertThresholds } from "@/lib/alerts/engine";
 import type { FlightOffer } from "@/types";
 
@@ -54,8 +54,14 @@ export async function runScanCycle(maxTasks = 15): Promise<ScanCycleSummary> {
 
   const provider = getActiveProvider(!settings.simulationMode);
 
+  // Profil de voyage actif (section 13) — module les seuils de qualité de vol et la
+  // pondération ATLAS Score. Sans profil actif, comportement neutre (biais nul).
+  const activeProfile = settings.activeProfileId
+    ? await prisma.travelProfile.findUnique({ where: { id: settings.activeProfileId } })
+    : null;
+
   const durationRules = safeDurationRules(settings.durationRules);
-  const weights: AtlasWeights = {
+  const baseWeights: AtlasWeights = {
     weightFare: settings.weightFare,
     weightSeason: settings.weightSeason,
     weightExperience: settings.weightExperience,
@@ -63,6 +69,9 @@ export async function runScanCycle(maxTasks = 15): Promise<ScanCycleSummary> {
     weightDuration: settings.weightDuration,
     weightPreference: settings.weightPreference,
   };
+  const weights = activeProfile
+    ? applyProfileBias(baseWeights, activeProfile.comfortWeight, activeProfile.priceWeight)
+    : baseWeights;
   const thresholds: AlertThresholds = {
     interesting: settings.alertTierInterestingMin,
     good: settings.alertTierGoodMin,
@@ -177,6 +186,10 @@ export async function runScanCycle(maxTasks = 15): Promise<ScanCycleSummary> {
         arriveTime: best.arriveTime,
         selfTransfer: best.selfTransfer,
         baggageIncluded: best.baggageIncluded,
+        earliestDeparture: activeProfile?.earliestDeparture,
+        latestDeparture: activeProfile?.latestDeparture,
+        maxStopsPreferred: activeProfile?.maxStops ?? settings.maxStops,
+        selfTransferAllowed: activeProfile?.maxSelfTransfer,
       });
 
       // --- Duration fit ---
@@ -192,7 +205,7 @@ export async function runScanCycle(maxTasks = 15): Promise<ScanCycleSummary> {
         priorityDestinations,
         favoriteRegions,
         bannedAirlines,
-        maxStopsPreference: settings.maxStops,
+        maxStopsPreference: activeProfile?.maxStops ?? settings.maxStops,
         baggageIncluded: best.baggageIncluded,
         requiredBaggage: settings.requiredBaggage,
         cabinClass: best.cabinClass,

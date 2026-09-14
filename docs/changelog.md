@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-09-14 (nuit, suite) — Travel Profiles réellement appliqués au scoring
+
+- Les 3 profils de voyage (FAMILLE/COUPLE/DEAL_HUNTER, section 13) étaient purement
+  décoratifs : sélectionnables dans l'UI mais jamais lus par le moteur. Corrigé.
+- `computeFlightQualityScore` accepte désormais des seuils dérivés du profil actif
+  (fenêtre de départ acceptable, nombre d'escales toléré, sévérité du self-transfer),
+  avec des valeurs par défaut identiques à l'ancien comportement si aucun profil n'est
+  actif (rétrocompatible).
+- Nouvelle fonction pure `applyProfileBias` (atlasScore.ts) : redistribue les poids
+  Fare/Flight selon `comfortWeight`/`priceWeight` du profil, en préservant la somme
+  totale des poids — DEAL_HUNTER priorise le prix, FAMILLE le confort, sans changer
+  l'échelle du score final.
+- Nettoyage : suppression de `UserSettings.preferredOriginIatas`, champ mort (jamais lu
+  ni écrit) redondant avec le contrôle par aéroport déjà plus granulaire
+  (`Airport.isOrigin/allowed/priority`).
+- 6 nouveaux tests unitaires (42 au total). Vérifié dans le navigateur : changer de
+  profil actif change visiblement le raisonnement du Flight Quality Score.
+
 ## 2026-09-14 (nuit) — Preference Score complet (section 14)
 
 - Les champs `UserSettings` de confort (température souhaitée, importance météo,

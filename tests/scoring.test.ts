@@ -3,7 +3,7 @@ import { computeFareScore } from "@/lib/scoring/fareScore";
 import { computeSeasonScore } from "@/lib/scoring/seasonScore";
 import { computeExperienceScore } from "@/lib/scoring/experienceScore";
 import { computeFlightQualityScore } from "@/lib/scoring/flightQualityScore";
-import { computeAtlasScore, DEFAULT_WEIGHTS } from "@/lib/scoring/atlasScore";
+import { computeAtlasScore, applyProfileBias, DEFAULT_WEIGHTS } from "@/lib/scoring/atlasScore";
 import { computePreferenceScore, type PreferenceInput } from "@/lib/scoring/preferenceScore";
 
 describe("Fare Intelligence (section 7)", () => {
@@ -94,6 +94,49 @@ describe("Flight Quality Score (section 10)", () => {
       departTime: "10:00", arriveTime: "18:00", selfTransfer: true, baggageIncluded: true,
     });
     expect(selfTransferResult.score).toBeLessThan(protectedResult.score);
+  });
+
+  it("amplifie la pénalité self-transfer pour un profil qui ne le tolère pas (ex. FAMILLE)", () => {
+    const base = { stops: 1, totalDurationMinutes: 600, bestKnownDurationMinutes: 550, departTime: "10:00", arriveTime: "18:00", selfTransfer: true, baggageIncluded: true };
+    const tolerant = computeFlightQualityScore({ ...base, selfTransferAllowed: true });
+    const intolerant = computeFlightQualityScore({ ...base, selfTransferAllowed: false });
+    expect(intolerant.score).toBeLessThan(tolerant.score);
+  });
+
+  it("pénalise davantage les escales au-delà du maximum toléré par le profil", () => {
+    const base = { stops: 3, totalDurationMinutes: 700, bestKnownDurationMinutes: 650, departTime: "10:00", arriveTime: "18:00", selfTransfer: false, baggageIncluded: true };
+    const dealHunter = computeFlightQualityScore({ ...base, maxStopsPreferred: 3 }); // DEAL_HUNTER tolère 3 escales
+    const famille = computeFlightQualityScore({ ...base, maxStopsPreferred: 1 }); // FAMILLE tolère 1 escale
+    expect(famille.score).toBeLessThan(dealHunter.score);
+  });
+
+  it("pénalise un départ hors de la fenêtre horaire du profil actif", () => {
+    const base = { stops: 0, totalDurationMinutes: 300, bestKnownDurationMinutes: 300, arriveTime: "12:00", selfTransfer: false, baggageIncluded: true };
+    const withinWindow = computeFlightQualityScore({ ...base, departTime: "08:00", earliestDeparture: "07:00", latestDeparture: "21:00" });
+    const outsideWindow = computeFlightQualityScore({ ...base, departTime: "05:00", earliestDeparture: "07:00", latestDeparture: "21:00" });
+    expect(outsideWindow.score).toBeLessThan(withinWindow.score);
+  });
+});
+
+describe("Biais de profil sur la pondération ATLAS (section 13)", () => {
+  it("préserve la somme totale des poids (l'échelle du score n'est pas affectée par le profil)", () => {
+    const biased = applyProfileBias(DEFAULT_WEIGHTS, 0.9, 0.1);
+    const total = Object.values(biased).reduce((a, b) => a + b, 0);
+    const originalTotal = Object.values(DEFAULT_WEIGHTS).reduce((a, b) => a + b, 0);
+    expect(total).toBeCloseTo(originalTotal, 5);
+  });
+
+  it("un profil DEAL_HUNTER (priceWeight élevé) augmente le poids Fare relatif à un profil FAMILLE (comfortWeight élevé)", () => {
+    const dealHunter = applyProfileBias(DEFAULT_WEIGHTS, 0.1, 0.9); // priceWeight=0.9
+    const famille = applyProfileBias(DEFAULT_WEIGHTS, 0.9, 0.1); // comfortWeight=0.7 (confort prioritaire)
+    expect(dealHunter.weightFare).toBeGreaterThan(famille.weightFare);
+    expect(famille.weightFlight).toBeGreaterThan(dealHunter.weightFlight);
+  });
+
+  it("ne change rien avec des poids profil neutres (0.5/0.5)", () => {
+    const neutral = applyProfileBias(DEFAULT_WEIGHTS, 0.5, 0.5);
+    expect(neutral.weightFare).toBeCloseTo(DEFAULT_WEIGHTS.weightFare, 5);
+    expect(neutral.weightFlight).toBeCloseTo(DEFAULT_WEIGHTS.weightFlight, 5);
   });
 });
 

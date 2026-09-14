@@ -39,6 +39,15 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 - [x] Génération d'explication humaine systématique
 - [x] Tests unitaires des cas limites (Nice→Rome cher, mousson, self-transfer, 35h)
 
+## PHASE 3bis — Travel Profiles réellement appliqués
+
+- [x] Correctif : les profils FAMILLE/COUPLE/DEAL_HUNTER étaient purement déclaratifs
+      (affichés mais jamais lus par le moteur de scoring) — corrigé. Le profil actif
+      module désormais : la fenêtre horaire acceptable et la sévérité du self-transfer
+      dans Flight Quality Score, le nombre d'escales toléré dans Preference Score, et la
+      pondération Fare/Flight de l'ATLAS Score via `applyProfileBias` (comfortWeight /
+      priceWeight, somme des poids préservée). 6 nouveaux tests.
+
 ## PHASE 4 — Alerts
 
 - [x] Seuils hiérarchisés configurables (Intéressant/Bonne affaire/Grosse

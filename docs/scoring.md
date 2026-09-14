@@ -43,6 +43,13 @@ connu sur la route, les horaires extrêmes, les correspondances non protégées
 (self-transfer) et l'absence de bagage inclus. Un vol à 35h de trajet ne peut jamais
 obtenir un bon score, même à prix cassé.
 
+Les seuils (fenêtre horaire, escales tolérées, sévérité du self-transfer) sont dérivés du
+**profil de voyage actif** (section 13) : FAMILLE pénalise fortement le self-transfer et
+tolère peu d'escales, DEAL_HUNTER est permissif. Sans profil actif, des valeurs par défaut
+raisonnables s'appliquent. Le profil influence aussi la pondération de l'ATLAS Score via
+`applyProfileBias` (`comfortWeight`/`priceWeight`, section 13) — la somme des poids est
+toujours préservée, seule leur répartition change.
+
 ## Adéquation durée / trajet
 
 Voir `/docs/product.md` (section durée intelligente). Score maximal entre 1x et 2x la
