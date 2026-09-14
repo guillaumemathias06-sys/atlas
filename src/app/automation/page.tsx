@@ -15,11 +15,23 @@ const MODE_DESCRIPTIONS: Record<string, string> = {
   AUTONOMOUS_PURCHASE: "ATLAS achèterait automatiquement si TOUTES les conditions sont vraies. Aucune intégration de paiement n'existe encore : ce mode ne peut avoir aucun effet réel aujourd'hui.",
 };
 
+function safeJsonArray(json: string): string[] {
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function AutomationPage() {
   const policy = await prisma.purchasePolicy.findUniqueOrThrow({ where: { id: "singleton" } });
   const recentAudit = await prisma.purchaseAuditLog.findMany({ orderBy: { createdAt: "desc" }, take: 10 });
   const candidates = await getEligibleCandidates(10);
   const eligible = candidates.filter((c) => c.decision.approved);
+  const profiles = await prisma.travelProfile.findMany({ orderBy: { isBuiltIn: "desc" } });
+  const allowedProfileIds = new Set(safeJsonArray(policy.allowedProfileIds));
+  const allowedDestinationIatas = safeJsonArray(policy.allowedDestinationIatas).join(", ");
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-8">
@@ -101,6 +113,25 @@ export default async function AutomationPage() {
             <label className="flex items-center gap-2 pt-6 text-sm text-atlas-text">
               <input type="checkbox" name="requireProtectedConnection" defaultChecked={policy.requireProtectedConnection} className="accent-atlas-accent" />
               Exiger une correspondance protégée
+            </label>
+          </div>
+          <div className="grid grid-cols-1 gap-4 border-t border-atlas-border px-5 py-5 md:grid-cols-2">
+            <div>
+              <span className="text-xs font-medium text-atlas-muted">Profils de voyage autorisés</span>
+              <p className="mb-2 text-[11px] text-atlas-muted/70">Aucun coché = tous les profils autorisés</p>
+              <div className="space-y-1.5">
+                {profiles.map((p) => (
+                  <label key={p.id} className="flex items-center gap-2 text-sm text-atlas-text">
+                    <input type="checkbox" name="allowedProfileIds" value={p.id} defaultChecked={allowedProfileIds.has(p.id)} className="accent-atlas-accent" />
+                    {p.name.replace("_", " ")}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <label className="block">
+              <span className="text-xs font-medium text-atlas-muted">Destinations autorisées (IATA)</span>
+              <p className="mb-1 text-[11px] text-atlas-muted/70">Vide = toutes destinations autorisées</p>
+              <input type="text" name="allowedDestinationIatas" defaultValue={allowedDestinationIatas} placeholder="ex: NRT, JFK" className={inputClass} />
             </label>
           </div>
         </Card>

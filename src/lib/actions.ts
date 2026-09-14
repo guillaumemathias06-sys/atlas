@@ -114,6 +114,9 @@ export async function updateAirport(formData: FormData) {
 export async function updatePurchasePolicy(formData: FormData) {
   const mode = String(formData.get("mode") ?? "OBSERVATION");
   const killSwitchEngaged = formData.get("killSwitchEngaged") === "on";
+  const csvToJsonArray = (key: string) =>
+    JSON.stringify(String(formData.get(key) ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+  const checkboxGroupToJsonArray = (key: string) => JSON.stringify(formData.getAll(key).map(String));
 
   await prisma.purchasePolicy.update({
     where: { id: "singleton" },
@@ -128,6 +131,8 @@ export async function updatePurchasePolicy(formData: FormData) {
       requireProtectedConnection: formData.get("requireProtectedConnection") === "on",
       maxPurchasesPerMonth: Number(formData.get("maxPurchasesPerMonth") ?? 0),
       maxMonthlyBudgetEUR: Number(formData.get("maxMonthlyBudgetEUR") ?? 0),
+      allowedProfileIds: checkboxGroupToJsonArray("allowedProfileIds"),
+      allowedDestinationIatas: csvToJsonArray("allowedDestinationIatas"),
     },
   });
   await prisma.auditLog.create({

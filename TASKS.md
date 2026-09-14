@@ -89,6 +89,10 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 - [ ] Intégration Google Calendar (nécessite OAuth — **action utilisateur requise**)
 - [x] Purchase Policy Engine (4 modes, kill switch, mandat déterministe)
 - [x] Tests du Purchase Policy Engine (cas limites du cahier des charges)
+- [x] Correctif : `allowedProfileIds`/`allowedDestinationIatas` du mandat d'achat étaient
+      modélisés et déjà lus par `evaluateMandateCriteria`, mais jamais éditables dans
+      l'UI Automation (champ mort côté formulaire) — corrigé, cases à cocher par profil +
+      champ destinations autorisées
 - [x] Approval flow UI (page Automation : liste des deals actifs évalués contre le mandat,
       bouton "Approuver (simulation)" visible seulement en mode APPROVAL_REQUIRED —
       n'effectue **aucune réservation réelle**, enregistre uniquement une décision dans
