@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #05070d;
+  color: #e7ecf9;
+}
+
+.bg-atlas-canvas {
+  background-color: #05070d;
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(124,143,255,0.14), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(63,214,201,0.1), transparent 40%),
+    linear-gradient(rgba(63,214,201,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(63,214,201,0.05) 1px, transparent 1px);
+  background-size: auto, auto, 42px 42px, 42px 42px;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e2947; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #22315a; }
+
+.score-ring {
+  background: conic-gradient(var(--ring-color, #3fd6c9) calc(var(--pct, 0) * 1%), #1e2947 0);
+}

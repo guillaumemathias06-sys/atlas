@@ -1,0 +1,392 @@
+// ATLAS — schéma de données
+// NOTE ARCHITECTURE: provider "sqlite" en local (zéro-config, fonctionne sans rien installer).
+// Le schéma est écrit pour être 100% portable vers PostgreSQL en production :
+// il suffit de changer `provider = "postgresql"` + DATABASE_URL. Voir /docs/architecture.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// AÉROPORTS & DÉPART
+// ---------------------------------------------------------------------------
+
+model Airport {
+  id                String   @id @default(cuid())
+  iata              String   @unique // ex: NCE
+  name              String
+  city              String
+  country           String
+  latitude           Float?
+  longitude          Float?
+
+  // Config départ (section 3 du cahier des charges)
+  isOrigin          Boolean  @default(false)  // utilisable comme aéroport de départ
+  isDestinationOk   Boolean  @default(true)   // utilisable comme destination
+  allowed           Boolean  @default(true)
+  priority          Int      @default(50)     // 0-100, plus haut = priorité de scan plus forte
+  distanceFromHomeKm Float?                   // distance depuis la base (pour aéroports de départ alternatifs)
+  accessCostEUR     Float?                    // coût estimé pour rejoindre cet aéroport
+  accessTimeMinutes Int?                      // temps estimé pour s'y rendre
+  minSavingsToUseEUR Float   @default(150)    // seuil mini d'économie pour recommander cet aéroport alternatif
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  originTasks      SearchTask[]      @relation("OriginAirport")
+  destinationTasks SearchTask[]      @relation("DestinationAirport")
+  originObs        PriceObservation[] @relation("OriginObs")
+  destinationObs   PriceObservation[] @relation("DestinationObs")
+
+  @@index([isOrigin, allowed])
+  @@index([isDestinationOk, allowed])
+}
+
+// ---------------------------------------------------------------------------
+// MOTEUR DE RECHERCHE / FILE DE TÂCHES (section 5)
+// ---------------------------------------------------------------------------
+
+// Valeurs possibles : PENDING / RUNNING / DONE / FAILED
+// (String plutôt qu'enum natif : SQLite n'a pas d'enums ; portable vers Postgres en Phase 5)
+model SearchTask {
+  id              String     @id @default(cuid())
+  originId        String
+  origin          Airport    @relation("OriginAirport", fields: [originId], references: [id])
+  destinationId   String
+  destination     Airport    @relation("DestinationAirport", fields: [destinationId], references: [id])
+
+  departDate      DateTime
+  returnDate      DateTime
+  tripLengthDays  Int
+
+  status          String     @default("PENDING")
+  priority        Int        @default(50)      // recalculé dynamiquement
+  frequencyHours  Float      @default(24)       // adapté selon "promesse" de la route
+  nextRunAt       DateTime   @default(now())
+  lastRunAt       DateTime?
+  retryCount      Int        @default(0)
+  lastError       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  observations PriceObservation[]
+
+  @@index([status, nextRunAt])
+  @@index([originId, destinationId, departDate, returnDate])
+}
+
+model ScanLog {
+  id         String   @id @default(cuid())
+  taskId     String?
+  provider   String
+  success    Boolean
+  message    String?
+  durationMs Int?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// HISTORIQUE DE PRIX (section 6)
+// ---------------------------------------------------------------------------
+
+model PriceObservation {
+  id             String   @id @default(cuid())
+  taskId         String?
+  task           SearchTask? @relation(fields: [taskId], references: [id])
+
+  originId       String
+  origin         Airport  @relation("OriginObs", fields: [originId], references: [id])
+  destinationId  String
+  destination    Airport  @relation("DestinationObs", fields: [destinationId], references: [id])
+
+  departDate     DateTime
+  returnDate     DateTime
+  tripLengthDays Int
+
+  priceEUR       Float
+  currency       String   @default("EUR")
+  airline        String
+  stops          Int      @default(0)
+  totalDurationMinutes Int
+  outboundDurationMinutes Int?
+  inboundDurationMinutes  Int?
+  baggageIncluded Boolean @default(false)
+  cabinClass     String   @default("ECONOMY")
+  selfTransfer   Boolean  @default(false) // correspondance non protégée
+  provider       String   @default("mock")
+  raw            String?  // JSON brut du provider (debug)
+
+  observedAt     DateTime @default(now())
+
+  deals Deal[]
+
+  @@index([originId, destinationId, observedAt])
+  @@index([destinationId, observedAt])
+}
+
+// ---------------------------------------------------------------------------
+// DESTINATION INTELLIGENCE — saisonnalité (section 8)
+// ---------------------------------------------------------------------------
+
+model DestinationProfile {
+  id          String @id @default(cuid())
+  iata        String @unique // aéroport destination associé
+  region      String
+  description String?
+
+  events        DestinationEvent[]
+  seasonMonths  SeasonMonth[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Un enregistrement par mois (1-12) décrivant le climat/l'affluence
+model SeasonMonth {
+  id            String  @id @default(cuid())
+  destinationId String
+  destination   DestinationProfile @relation(fields: [destinationId], references: [id])
+  month         Int     // 1-12
+
+  avgTempC        Float?
+  seaTempC        Float?
+  rainfallMm      Float?
+  humidityPct     Float?
+  isDrySeason     Boolean @default(false)
+  isRainySeason   Boolean @default(false)
+  isMonsoon       Boolean @default(false)
+  cycloneRisk     Boolean @default(false)
+  extremeHeat     Boolean @default(false)
+  extremeCold     Boolean @default(false)
+  snowLikely      Boolean @default(false)
+  touristCrowding Int     @default(50) // 0-100
+  isHighSeason    Boolean @default(false)
+  seasonScore     Int     @default(50) // 0-100, calculé/éditable
+
+  @@unique([destinationId, month])
+}
+
+// ---------------------------------------------------------------------------
+// EXPERIENCE INTELLIGENCE — événements exceptionnels (section 9)
+// ---------------------------------------------------------------------------
+
+model DestinationEvent {
+  id            String  @id @default(cuid())
+  destinationId String
+  destination   DestinationProfile @relation(fields: [destinationId], references: [id])
+
+  name              String
+  description       String?
+  typicalStartMonth Int     // 1-12
+  typicalStartDay   Int     @default(1)
+  typicalEndMonth   Int
+  typicalEndDay     Int     @default(28)
+  dateVariability   String  @default("MEDIUM") // LOW / MEDIUM / HIGH (ex: cerisiers = HIGH)
+  importance        Int     @default(50) // 0-100
+  potentialScore    Int     @default(70) // score max attribuable si la date correspond
+  recommendation    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([destinationId])
+}
+
+// ---------------------------------------------------------------------------
+// DEALS / OPPORTUNITÉS DÉTECTÉES (agrégation des scores)
+// ---------------------------------------------------------------------------
+
+model Deal {
+  id                String   @id @default(cuid())
+  observationId     String
+  observation       PriceObservation @relation(fields: [observationId], references: [id])
+
+  fareScore         Float
+  seasonScore       Float
+  experienceScore   Float
+  flightQualityScore Float
+  durationFitScore  Float
+  preferenceScore   Float
+  atlasScore        Float
+  explanation       String   // texte généré, lisible humainement
+
+  priceVsMedianPct  Float?   // écart % au prix médian historique
+  priceVsAvgPct     Float?
+  priceVsAllTimeLowPct Float?
+
+  status            String   @default("ACTIVE") // ACTIVE / EXPIRED / SUPERSEDED
+  createdAt         DateTime @default(now())
+
+  alerts Alert[]
+
+  @@index([atlasScore])
+  @@index([status, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// ALERTES (section 12)
+// ---------------------------------------------------------------------------
+
+// tier : NONE / INTERESTING / GOOD / GREAT / EXCEPTIONAL
+model Alert {
+  id        String    @id @default(cuid())
+  dealId    String
+  deal      Deal      @relation(fields: [dealId], references: [id])
+  tier      String
+  channel   String    @default("IN_APP") // IN_APP / EMAIL / PUSH / TELEGRAM / SMS
+  message   String
+  read      Boolean   @default(false)
+  dedupeKey String    // route+tripLength+scoreBucket pour éviter le spam
+  createdAt DateTime  @default(now())
+
+  @@index([dedupeKey, createdAt])
+  @@index([read, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// PROFILS DE VOYAGE (section 13) & PRÉFÉRENCES (section 14)
+// ---------------------------------------------------------------------------
+
+model TravelProfile {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  isBuiltIn   Boolean @default(false) // FAMILLE / COUPLE / DEAL_HUNTER
+  isActive    Boolean @default(false)
+
+  maxStops           Int     @default(2)
+  maxSelfTransfer     Boolean @default(true) // autorise self-transfer risqué
+  earliestDeparture   String  @default("05:00")
+  latestDeparture     String  @default("23:00")
+  penalizeLongLayover Boolean @default(true)
+  minLayoverMinutes   Int     @default(60)
+  maxLayoverMinutes   Int     @default(600)
+  comfortWeight       Float   @default(0.5) // 0 = ignore confort, 1 = confort prioritaire
+  priceWeight         Float   @default(0.5) // 0 = ignore prix, 1 = full deal-hunter
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserSettings {
+  id  String @id @default("singleton")
+
+  // Aéroports & destinations
+  preferredOriginIatas   String  @default("[]") // JSON array
+  bannedDestinationIatas String  @default("[]")
+  priorityDestinationIatas String @default("[]")
+  favoriteRegions        String  @default("[]")
+
+  // Contraintes
+  maxTripLengthDays  Int   @default(30)
+  maxBudgetEUR       Float @default(1500)
+  maxStops           Int   @default(2)
+  bannedAirlines     String @default("[]")
+  forbiddenHoursStart String @default("00:00")
+  forbiddenHoursEnd   String @default("05:00")
+  requiredBaggage     String @default("CARRY_ON") // NONE / CARRY_ON / CHECKED
+  cabinClass          String @default("ECONOMY")
+
+  // Météo / confort
+  preferredTempMinC Float @default(18)
+  preferredTempMaxC Float @default(30)
+  beachImportance   Int   @default(50) // 0-100
+  weatherImportance Int   @default(50)
+  rainTolerance     Int   @default(30) // 0-100, haut = tolère bien la pluie
+
+  // Profil actif & seuils
+  activeProfileId   String?
+  minSeasonScore    Int   @default(0)
+  minAtlasScore     Int   @default(60)
+
+  // Seuils d'alerte (section 12), configurables
+  alertTierInterestingMin Int @default(75)
+  alertTierGoodMin        Int @default(85)
+  alertTierGreatMin       Int @default(93)
+  alertTierExceptionalMin Int @default(97)
+
+  // Pondération ATLAS Score (section 11), doit sommer ~1.0
+  weightFare       Float @default(0.35)
+  weightSeason     Float @default(0.20)
+  weightExperience Float @default(0.15)
+  weightFlight     Float @default(0.10)
+  weightDuration   Float @default(0.10)
+  weightPreference Float @default(0.10)
+
+  // Règles de durée intelligente (section 4), en JSON éditable
+  // [{maxTravelHours, minStayDays}, ...] — valeurs par défaut posées par prisma/seed.ts
+  durationRules String @default("[]")
+
+  // Moteur
+  engineEnabled Boolean @default(true)
+  simulationMode Boolean @default(true) // tant qu'aucun provider réel n'est configuré
+
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// CALENDRIER INTERNE (section 20)
+// ---------------------------------------------------------------------------
+
+model CalendarBlock {
+  id        String   @id @default(cuid())
+  startDate DateTime
+  endDate   DateTime
+  label     String
+  blocking  Boolean  @default(true) // true = dates interdites; false = juste une note
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// PURCHASE POLICY ENGINE — architecture V2/V3 (section 21)
+// Désactivé par défaut. Jamais de dépense réelle sans configuration explicite.
+// ---------------------------------------------------------------------------
+
+// mode : OBSERVATION / ALERT / APPROVAL_REQUIRED / AUTONOMOUS_PURCHASE
+model PurchasePolicy {
+  id     String @id @default("singleton")
+  mode   String @default("OBSERVATION")
+  killSwitchEngaged Boolean @default(true) // true = achat bloqué quoi qu'il arrive
+
+  maxPricePerPersonEUR Float @default(300)
+  maxBookingTotalEUR   Float @default(600)
+  minAtlasScore        Int   @default(98)
+  minSeasonScore       Int   @default(85)
+  maxStops             Int   @default(1)
+  requireProtectedConnection Boolean @default(true)
+  allowedProfileIds    String @default("[]")
+  maxPurchasesPerMonth Int   @default(0)
+  maxMonthlyBudgetEUR  Float @default(0)
+  allowedDestinationIatas String @default("[]")
+
+  updatedAt DateTime @updatedAt
+}
+
+model PurchaseAuditLog {
+  id        String   @id @default(cuid())
+  dealId    String?
+  decision  String   // APPROVED / REJECTED / SIMULATED
+  reasons   String   // JSON array des raisons (règles évaluées)
+  mode      String
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// AUDIT / SÉCURITÉ (section 22)
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  actor     String   @default("system")
+  metadata  String?  // JSON
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

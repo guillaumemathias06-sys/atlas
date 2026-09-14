@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+.env
+*.db
+*.db-journal
+dev.db
+dev.db-journal
+.DS_Store
+npm-debug.log*
+.vercel
+coverage/
+tsconfig.tsbuildinfo
