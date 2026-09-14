@@ -84,6 +84,13 @@ export async function updateSettings(formData: FormData) {
       weightDuration: num("weightDuration", existing.weightDuration) / 100,
       weightPreference: num("weightPreference", existing.weightPreference) / 100,
       simulationMode: formData.get("simulationMode") === "on",
+      preferredTempMinC: num("preferredTempMinC", existing.preferredTempMinC),
+      preferredTempMaxC: num("preferredTempMaxC", existing.preferredTempMaxC),
+      weatherImportance: num("weatherImportance", existing.weatherImportance),
+      rainTolerance: num("rainTolerance", existing.rainTolerance),
+      beachImportance: num("beachImportance", existing.beachImportance),
+      requiredBaggage: String(formData.get("requiredBaggage") ?? existing.requiredBaggage),
+      cabinClass: String(formData.get("cabinClass") ?? existing.cabinClass),
     },
   });
   await prisma.auditLog.create({ data: { action: "SETTINGS_UPDATED" } });

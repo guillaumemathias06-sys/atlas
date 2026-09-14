@@ -31,7 +31,10 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 - [x] Experience Score (événements exceptionnels, tolérance de dates variable)
 - [x] Flight Quality Score (escales, horaires, self-transfer, durée vs meilleur connu)
 - [x] Duration Fit Score (règles de durée intelligente, section 4)
-- [x] Preference Score (destinations prioritaires, régions favorites, compagnies bannies)
+- [x] Preference Score (destinations prioritaires, régions favorites, compagnies bannies,
+      température souhaitée, tolérance à la pluie, importance de la plage, bagages, classe
+      — tous les champs `UserSettings` de la section 14 sont désormais branchés sur le
+      scoring, pas seulement stockés)
 - [x] ATLAS Score agrégateur, pondération configurable
 - [x] Génération d'explication humaine systématique
 - [x] Tests unitaires des cas limites (Nice→Rome cher, mousson, self-transfer, 35h)

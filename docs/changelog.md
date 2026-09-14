@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-14 (nuit) — Preference Score complet (section 14)
+
+- Les champs `UserSettings` de confort (température souhaitée, importance météo,
+  tolérance à la pluie, importance de la plage, bagage requis, classe souhaitée)
+  existaient dans le schéma et la page Settings les mentionnait, mais n'étaient **jamais
+  utilisés dans le scoring** — corrigé : `computePreferenceScore` les prend maintenant
+  tous en compte, branché depuis `runner.ts`.
+- Ajout de `DestinationProfile.isBeachDestination` (Bali = true) pour que l'importance
+  de la plage ait une donnée réelle à évaluer.
+- Nouvelle carte Settings "Confort & météo" pour éditer ces préférences.
+- 6 nouveaux tests unitaires (36 au total).
+
 ## 2026-09-14 (soir) — Phase 6/7 : coûts réels, calendrier, flux d'approbation
 
 - **Real Departure Cost** (section 18) : comparaison des aéroports de départ alternatifs

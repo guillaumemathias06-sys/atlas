@@ -48,6 +48,16 @@ obtenir un bon score, même à prix cassé.
 Voir `/docs/product.md` (section durée intelligente). Score maximal entre 1x et 2x la
 durée minimale requise pour le temps de trajet, dégradé fortement en dessous du minimum.
 
+## Preference Score
+
+Combine deux familles de critères, tous configurables dans Settings sans toucher au
+code : destinations/régions/compagnies/escales (exclusions et priorités explicites), et
+confort personnel — température souhaitée vs température moyenne du mois de départ,
+tolérance à la pluie vs précipitations du mois, importance de la plage vs
+`DestinationProfile.isBeachDestination`, bagage requis et classe souhaitée vs l'offre
+observée. Chaque composante n'agit que si son "importance" (0-100) est non nulle, pour ne
+jamais pénaliser un utilisateur qui n'a pas exprimé de préférence sur ce point.
+
 ## Cas limites testés (`tests/scoring.test.ts`, `tests/purchasePolicy.test.ts`)
 
 - Un tarif bas en absolu mais cher pour sa route (Nice→Rome à 170€) reçoit un Fare Score

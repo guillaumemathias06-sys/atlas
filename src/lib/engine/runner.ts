@@ -183,7 +183,7 @@ export async function runScanCycle(maxTasks = 15): Promise<ScanCycleSummary> {
       const totalTravelHours = best.totalDurationMinutes / 60;
       const durFit = durationFitScore(totalTravelHours, task.tripLengthDays, durationRules.length ? durationRules : undefined);
 
-      // --- Preference ---
+      // --- Preference (destinations/compagnies/escales + confort météo/plage/bagages/classe) ---
       const pref = computePreferenceScore({
         destinationIata: task.destination.iata,
         region: destProfile?.region,
@@ -193,6 +193,18 @@ export async function runScanCycle(maxTasks = 15): Promise<ScanCycleSummary> {
         favoriteRegions,
         bannedAirlines,
         maxStopsPreference: settings.maxStops,
+        baggageIncluded: best.baggageIncluded,
+        requiredBaggage: settings.requiredBaggage,
+        cabinClass: best.cabinClass,
+        preferredCabinClass: settings.cabinClass,
+        destinationAvgTempC: seasonMonth?.avgTempC ?? null,
+        preferredTempMinC: settings.preferredTempMinC,
+        preferredTempMaxC: settings.preferredTempMaxC,
+        weatherImportance: settings.weatherImportance,
+        destinationRainfallMm: seasonMonth?.rainfallMm ?? null,
+        rainTolerance: settings.rainTolerance,
+        isBeachDestination: destProfile?.isBeachDestination ?? false,
+        beachImportance: settings.beachImportance,
       });
 
       const atlasScore = computeAtlasScore(

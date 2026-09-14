@@ -137,10 +137,11 @@ model PriceObservation {
 // ---------------------------------------------------------------------------
 
 model DestinationProfile {
-  id          String @id @default(cuid())
-  iata        String @unique // aéroport destination associé
-  region      String
-  description String?
+  id                String  @id @default(cuid())
+  iata              String  @unique // aéroport destination associé
+  region            String
+  description       String?
+  isBeachDestination Boolean @default(false) // utilisé par le Preference Score (section 14)
 
   events        DestinationEvent[]
   seasonMonths  SeasonMonth[]

@@ -32,7 +32,7 @@ const AIRPORTS: Array<{
 
 // Destination Intelligence (section 8-9) — données manuelles de démonstration
 const DESTINATIONS: Array<{
-  iata: string; region: string; description: string;
+  iata: string; region: string; description: string; isBeachDestination?: boolean;
   months: Array<{
     month: number; avgTempC: number; seaTempC?: number; rainfallMm: number; humidityPct: number;
     isDrySeason?: boolean; isRainySeason?: boolean; isMonsoon?: boolean; cycloneRisk?: boolean;
@@ -80,7 +80,7 @@ const DESTINATIONS: Array<{
     events: [],
   },
   {
-    iata: "DPS", region: "Asie du Sud-Est", description: "Bali — plages, rizières, temples.",
+    iata: "DPS", region: "Asie du Sud-Est", description: "Bali — plages, rizières, temples.", isBeachDestination: true,
     months: [
       { month: 1, avgTempC: 27, seaTempC: 29, rainfallMm: 345, humidityPct: 85, isRainySeason: true, isMonsoon: true, touristCrowding: 55, seasonScore: 30 },
       { month: 7, avgTempC: 26, seaTempC: 27, rainfallMm: 60, humidityPct: 70, isDrySeason: true, touristCrowding: 85, isHighSeason: true, seasonScore: 88 },
@@ -152,8 +152,8 @@ async function main() {
   for (const d of DESTINATIONS) {
     const profile = await prisma.destinationProfile.upsert({
       where: { iata: d.iata },
-      update: { region: d.region, description: d.description },
-      create: { iata: d.iata, region: d.region, description: d.description },
+      update: { region: d.region, description: d.description, isBeachDestination: d.isBeachDestination ?? false },
+      create: { iata: d.iata, region: d.region, description: d.description, isBeachDestination: d.isBeachDestination ?? false },
     });
 
     for (const m of d.months) {

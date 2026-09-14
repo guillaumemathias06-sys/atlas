@@ -4,6 +4,7 @@ import { computeSeasonScore } from "@/lib/scoring/seasonScore";
 import { computeExperienceScore } from "@/lib/scoring/experienceScore";
 import { computeFlightQualityScore } from "@/lib/scoring/flightQualityScore";
 import { computeAtlasScore, DEFAULT_WEIGHTS } from "@/lib/scoring/atlasScore";
+import { computePreferenceScore, type PreferenceInput } from "@/lib/scoring/preferenceScore";
 
 describe("Fare Intelligence (section 7)", () => {
   it("attribue un score élevé pour un prix bien sous la médiane historique", () => {
@@ -114,5 +115,65 @@ describe("ATLAS Score — agrégation (section 11)", () => {
     );
     // Le score global n'est pas 100 : le season score pèse bien dans l'agrégation.
     expect(score).toBeLessThan(90);
+  });
+});
+
+describe("Preference Score — confort/météo/plage/bagages (section 14)", () => {
+  function basePref(overrides: Partial<PreferenceInput> = {}): PreferenceInput {
+    return {
+      destinationIata: "XXX",
+      airline: "Air France",
+      stops: 0,
+      priorityDestinations: [],
+      favoriteRegions: [],
+      bannedAirlines: [],
+      maxStopsPreference: 2,
+      baggageIncluded: true,
+      requiredBaggage: "NONE",
+      cabinClass: "ECONOMY",
+      preferredCabinClass: "ECONOMY",
+      preferredTempMinC: 18,
+      preferredTempMaxC: 30,
+      weatherImportance: 0,
+      rainTolerance: 50,
+      beachImportance: 0,
+      ...overrides,
+    };
+  }
+
+  it("pénalise une température hors de la plage souhaitée quand l'importance météo est élevée", () => {
+    const cold = computePreferenceScore(basePref({ destinationAvgTempC: -5, weatherImportance: 100 }));
+    const ideal = computePreferenceScore(basePref({ destinationAvgTempC: 24, weatherImportance: 100 }));
+    expect(cold.score).toBeLessThan(ideal.score);
+  });
+
+  it("ignore la météo quand l'importance météo est nulle", () => {
+    const cold = computePreferenceScore(basePref({ destinationAvgTempC: -20, weatherImportance: 0 }));
+    const ideal = computePreferenceScore(basePref({ destinationAvgTempC: 24, weatherImportance: 0 }));
+    expect(cold.score).toBe(ideal.score);
+  });
+
+  it("pénalise une pluie forte seulement si la tolérance est basse", () => {
+    const intolerant = computePreferenceScore(basePref({ destinationRainfallMm: 300, rainTolerance: 0 }));
+    const tolerant = computePreferenceScore(basePref({ destinationRainfallMm: 300, rainTolerance: 100 }));
+    expect(intolerant.score).toBeLessThan(tolerant.score);
+  });
+
+  it("bonifie une destination balnéaire quand l'importance plage est élevée, pénalise sinon", () => {
+    const beach = computePreferenceScore(basePref({ isBeachDestination: true, beachImportance: 100 }));
+    const notBeach = computePreferenceScore(basePref({ isBeachDestination: false, beachImportance: 100 }));
+    expect(beach.score).toBeGreaterThan(notBeach.score);
+  });
+
+  it("pénalise l'absence de bagage requis", () => {
+    const withBaggage = computePreferenceScore(basePref({ requiredBaggage: "CHECKED", baggageIncluded: true }));
+    const withoutBaggage = computePreferenceScore(basePref({ requiredBaggage: "CHECKED", baggageIncluded: false }));
+    expect(withoutBaggage.score).toBeLessThan(withBaggage.score);
+  });
+
+  it("ne pénalise jamais une classe supérieure à la préférence", () => {
+    const upgraded = computePreferenceScore(basePref({ preferredCabinClass: "ECONOMY", cabinClass: "BUSINESS" }));
+    const asked = computePreferenceScore(basePref({ preferredCabinClass: "ECONOMY", cabinClass: "ECONOMY" }));
+    expect(upgraded.score).toBeGreaterThanOrEqual(asked.score);
   });
 });

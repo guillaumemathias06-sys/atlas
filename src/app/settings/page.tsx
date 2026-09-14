@@ -148,6 +148,42 @@ export default async function SettingsPage() {
         </Card>
 
         <Card className="mt-6">
+          <CardHeader title="Confort & météo" subtitle="Utilisé par le Preference Score (10% de l'ATLAS Score par défaut)" />
+          <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+            <Field label="Température souhaitée — min (°C)">
+              <input type="number" name="preferredTempMinC" defaultValue={settings.preferredTempMinC} className={inputClass} />
+            </Field>
+            <Field label="Température souhaitée — max (°C)">
+              <input type="number" name="preferredTempMaxC" defaultValue={settings.preferredTempMaxC} className={inputClass} />
+            </Field>
+            <Field label="Importance de la météo (0-100)">
+              <input type="number" name="weatherImportance" min={0} max={100} defaultValue={settings.weatherImportance} className={inputClass} />
+            </Field>
+            <Field label="Tolérance à la pluie (0-100)" hint="100 = insensible à la pluie">
+              <input type="number" name="rainTolerance" min={0} max={100} defaultValue={settings.rainTolerance} className={inputClass} />
+            </Field>
+            <Field label="Importance de la plage (0-100)">
+              <input type="number" name="beachImportance" min={0} max={100} defaultValue={settings.beachImportance} className={inputClass} />
+            </Field>
+            <Field label="Bagage requis">
+              <select name="requiredBaggage" defaultValue={settings.requiredBaggage} className={inputClass}>
+                <option value="NONE">Aucun</option>
+                <option value="CARRY_ON">Cabine</option>
+                <option value="CHECKED">Soute</option>
+              </select>
+            </Field>
+            <Field label="Classe souhaitée">
+              <select name="cabinClass" defaultValue={settings.cabinClass} className={inputClass}>
+                <option value="ECONOMY">Économique</option>
+                <option value="PREMIUM_ECONOMY">Premium Économique</option>
+                <option value="BUSINESS">Affaires</option>
+                <option value="FIRST">Première</option>
+              </select>
+            </Field>
+          </div>
+        </Card>
+
+        <Card className="mt-6">
           <CardHeader title="Mode du moteur" />
           <div className="flex items-center gap-3 p-5">
             <label className="flex items-center gap-2 text-sm text-atlas-text">
