@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-15 (suite 2) — Observabilité complète sur System Health (section 28)
+
+- Dimensions manquantes ajoutées : latence moyenne des scans (24h), rythme d'observations
+  actuel + projection journalière ("quotas estimés").
+- Nouveau module pur `computeSystemAlerts` (testable sans DB) : détecte un moteur actif
+  resté silencieux trop longtemps malgré des tâches en attente, un moteur en pause avec
+  des tâches en attente, un taux d'erreur élevé (>30% = danger, >10% = avertissement).
+  Affiché en carte dédiée sur System Health, uniquement quand pertinent.
+- 4 nouveaux tests (50 au total). Build/typecheck propres, vérifié dans le navigateur.
+
 ## 2026-09-15 (suite) — États loading/erreur/404 (section 24)
 
 - `src/app/loading.tsx` : squelette animé, couvre automatiquement toutes les routes sans

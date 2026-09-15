@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db";
 import { Card, CardHeader, Badge, StatTile } from "@/components/ui";
 import { listProviders } from "@/lib/providers";
+import { computeSystemAlerts } from "@/lib/health/systemAlerts";
 
 export const dynamic = "force-dynamic";
 
 export default async function HealthPage() {
-  const [settings, totalObs, totalDeals, totalAlerts, scanLogs24h, errorLogs24h, oldestPending, newestScan, taskCounts, dbSizeInfo] =
+  const [settings, totalObs, totalDeals, totalAlerts, scanLogs24h, errorLogs24h, oldestPending, newestScan, taskCounts, dbSizeInfo, pendingCount, avgLatency, obsLastHour] =
     await Promise.all([
       prisma.userSettings.findUnique({ where: { id: "singleton" } }),
       prisma.priceObservation.count(),
@@ -17,10 +18,20 @@ export default async function HealthPage() {
       prisma.scanLog.findFirst({ orderBy: { createdAt: "desc" } }),
       prisma.searchTask.groupBy({ by: ["status"], _count: { _all: true } }),
       prisma.auditLog.count(),
+      prisma.searchTask.count({ where: { status: "PENDING" } }),
+      prisma.scanLog.aggregate({ where: { createdAt: { gte: new Date(Date.now() - 86400000) } }, _avg: { durationMs: true } }),
+      prisma.priceObservation.count({ where: { observedAt: { gte: new Date(Date.now() - 3600000) } } }),
     ]);
 
   const providers = listProviders();
   const errorRate24h = scanLogs24h > 0 ? Math.round((errorLogs24h / scanLogs24h) * 100) : 0;
+  const systemAlerts = computeSystemAlerts({
+    engineEnabled: settings?.engineEnabled ?? false,
+    pendingTasksCount: pendingCount,
+    errorRate24hPct: errorRate24h,
+    lastScanAt: newestScan?.createdAt ?? null,
+  });
+  const projectedDaily = obsLastHour * 24;
 
   return (
     <div className="mx-auto max-w-6xl px-8 py-8">
@@ -31,12 +42,30 @@ export default async function HealthPage() {
         <StatTile label="Moteur" value={<Badge tone={settings?.engineEnabled ? "good" : "danger"}>{settings?.engineEnabled ? "ACTIF" : "PAUSE"}</Badge>} />
         <StatTile label="Scans (24h)" value={scanLogs24h} />
         <StatTile label="Taux d'erreur (24h)" value={`${errorRate24h}%`} />
+        <StatTile label="Latence moyenne (24h)" value={avgLatency._avg.durationMs ? `${Math.round(avgLatency._avg.durationMs)}ms` : "—"} />
         <StatTile label="Dernier scan" value={newestScan ? new Date(newestScan.createdAt).toLocaleTimeString("fr-FR") : "—"} />
         <StatTile label="Observations totales" value={totalObs} />
         <StatTile label="Deals totaux" value={totalDeals} />
         <StatTile label="Alertes totales" value={totalAlerts} />
         <StatTile label="Entrées d'audit" value={dbSizeInfo} />
+        <StatTile label="Rythme actuel" value={`${obsLastHour}/h`} hint={`≈ ${projectedDaily}/jour au rythme observé`} />
       </div>
+
+      {systemAlerts.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader title="Alertes système" subtitle="Diagnostics automatiques sur l'état du moteur" />
+          <div className="space-y-2 p-5">
+            {systemAlerts.map((a, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                <Badge tone={a.severity === "danger" ? "danger" : a.severity === "warn" ? "warn" : "neutral"}>
+                  {a.severity === "danger" ? "!" : a.severity === "warn" ? "⚠" : "i"}
+                </Badge>
+                <span className="text-atlas-text">{a.message}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card className="mt-6">
         <CardHeader title="File de tâches" subtitle="Répartition par statut" />

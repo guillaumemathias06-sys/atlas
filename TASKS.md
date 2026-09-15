@@ -109,6 +109,14 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 - [ ] Booking API (nécessite un partenaire de réservation + moyen de paiement —
       **action utilisateur requise, hors périmètre tant que non demandé explicitement**)
 
+## PHASE 8bis — Observabilité complète (section 28)
+
+- [x] Ajout des dimensions manquantes sur System Health : latence moyenne des scans
+      (24h), rythme d'observations actuel + projection journalière (quotas estimés),
+      alertes système calculées (`computeSystemAlerts`) — moteur silencieux malgré des
+      tâches en attente, moteur en pause avec tâches en attente, taux d'erreur élevé.
+      4 nouveaux tests.
+
 ## PHASE 8 — Optimisation
 
 - [ ] Personnalisation avancée (apprentissage des préférences implicites)
