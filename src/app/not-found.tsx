@@ -1,12 +1,13 @@
+// Filet de sécurité pour une URL totalement hors de l'arbre de routes (le 404 "normal",
+// dans le contexte applicatif avec la Nav, vit dans (dashboard)/not-found.tsx).
 import Link from "next/link";
-import { Card } from "@/components/ui";
 
-export default function NotFound() {
+export default function RootNotFound() {
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-8 text-center">
-      <Card className="w-full p-8">
+    <div className="flex min-h-screen items-center justify-center px-6">
+      <div className="w-full max-w-sm rounded-2xl border border-atlas-border bg-atlas-panel/70 p-8 text-center shadow-panel">
         <p className="text-3xl">🧭</p>
-        <h1 className="mt-3 font-display text-lg font-semibold text-atlas-text">Destination introuvable</h1>
+        <h1 className="mt-3 font-display text-lg font-semibold text-atlas-text">Page introuvable</h1>
         <p className="mt-2 text-sm text-atlas-muted">Cette page n'existe pas, ou plus.</p>
         <Link
           href="/"
@@ -14,7 +15,7 @@ export default function NotFound() {
         >
           Retour au dashboard
         </Link>
-      </Card>
+      </div>
     </div>
   );
 }

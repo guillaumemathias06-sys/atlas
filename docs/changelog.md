@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-09-15 (suite 5) — Préparation à la mise en ligne
+
+Guillaume a précisé que la fin du développement sera une mise en ligne réelle. Le code est
+maintenant prêt pour un déploiement Vercel + PostgreSQL, ce qu'il ne l'était pas avant
+cette session (deux failles de sécurité auraient rendu un déploiement public imprudent) :
+
+- **Faille corrigée** : `POST /api/engine/scan` était un endpoint totalement ouvert —
+  n'importe qui aurait pu déclencher des cycles de scan (et, une fois un provider payant
+  connecté, consommer du quota) simplement en le trouvant. Protégé par `CRON_SECRET`,
+  envoyé automatiquement par Vercel Cron une fois la variable définie ; ouvert par défaut
+  en dev local. Découvert que Vercel Cron n'appelle qu'en GET (pas seulement POST comme
+  conçu initialement) — les deux méthodes déclenchent désormais un cycle.
+- **Faille corrigée** : aucune authentification n'existait — n'importe qui avec l'URL
+  aurait pu voir et modifier les préférences personnelles, le mandat d'achat, etc. Ajout
+  d'un mot de passe unique (`SITE_PASSWORD`, adapté à un outil personnel mono-utilisateur,
+  pas de système multi-comptes) via `middleware.ts` (déplacé de la racine vers `src/` —
+  emplacement requis par Next.js avec un dossier `src/app`, sinon ignoré silencieusement).
+  Mot de passe jamais stocké en clair (hash SHA-256 en cookie httpOnly). Inactif par
+  défaut, comme `CRON_SECRET`.
+- Restructuration en groupe de routes `(dashboard)` pour que `/login` reste un écran
+  plein-page sans exposer le menu avant authentification.
+- `vercel.json` avec cron `/api/engine/scan` toutes les 15 min (limite Hobby : 1x/jour,
+  documentée).
+- `ATLAS_ADMIN_SECRET` (déclaré dans `.env.example`, jamais utilisé) remplacé par
+  `CRON_SECRET`, qui l'est réellement.
+- `docs/deployment.md` réécrit : procédure complète Vercel + Postgres + Cron, variables
+  d'environnement requises avant tout accès public.
+- 6 nouveaux tests (67 au total). Vérifié dans le navigateur : redirection vers /login,
+  rejet d'un mauvais mot de passe, connexion, déconnexion, endpoints publics (`/api/health`)
+  non bloqués.
+
 ## 2026-09-15 (suite 4) — Canaux de notification réellement branchés
 
 - `src/lib/alerts/channels/types.ts` exportait `channels` (IN_APP/TELEGRAM/EMAIL) mais

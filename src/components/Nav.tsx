@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logout } from "@/lib/auth/actions";
 
 const ITEMS = [
   { href: "/", label: "Dashboard", icon: "◈" },
@@ -17,7 +18,7 @@ const ITEMS = [
   { href: "/health", label: "System Health", icon: "♥" },
 ];
 
-export function Nav() {
+export function Nav({ authEnabled }: { authEnabled: boolean }) {
   const pathname = usePathname();
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-atlas-border bg-atlas-panel/60">
@@ -49,8 +50,15 @@ export function Nav() {
           );
         })}
       </nav>
-      <div className="border-t border-atlas-border px-5 py-4 text-[10px] text-atlas-muted">
-        ATLAS v0.1 · mode local
+      <div className="border-t border-atlas-border px-5 py-4">
+        <p className="text-[10px] text-atlas-muted">ATLAS v0.1 {authEnabled ? "" : "· mode local"}</p>
+        {authEnabled && (
+          <form action={logout} className="mt-2">
+            <button type="submit" className="text-[11px] text-atlas-muted hover:text-atlas-accent">
+              Se déconnecter
+            </button>
+          </form>
+        )}
       </div>
     </aside>
   );

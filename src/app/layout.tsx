@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Nav } from "@/components/Nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -7,15 +6,12 @@ export const metadata: Metadata = {
   description: "Agent personnel autonome de détection d'opportunités de voyage",
 };
 
+// Coquille minimale : la Nav et le contenu applicatif vivent dans (dashboard)/layout.tsx,
+// pour que /login reste un écran plein-page sans exposer le menu avant authentification.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body className="bg-atlas-canvas min-h-screen">
-        <div className="flex">
-          <Nav />
-          <main className="min-h-screen flex-1 overflow-x-hidden">{children}</main>
-        </div>
-      </body>
+      <body className="bg-atlas-canvas min-h-screen">{children}</body>
     </html>
   );
 }

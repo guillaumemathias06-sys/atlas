@@ -68,6 +68,28 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 - [x] Écran Alerts avec marquage lu/non lu
 - [x] Dashboard Top Opportunities + stats (scans du jour, deals détectés, etc.)
 
+## PHASE 9 — Préparation à la mise en ligne
+
+Le développement se termine par une mise en ligne réelle (décision de Guillaume,
+15/09/2026). Ce qui est déjà prêt côté code :
+
+- [x] `POST`/`GET /api/engine/scan` protégé par `CRON_SECRET` (ouvert par défaut en dev
+      local, verrouillé dès que la variable est définie)
+- [x] Protection d'accès au site par mot de passe unique (`SITE_PASSWORD`,
+      `src/middleware.ts`) — page `/login` stylée, cookie httpOnly signé par hash SHA-256
+      (jamais le mot de passe en clair), déconnexion depuis la Nav. Inactif par défaut
+      (dev local libre), à activer avant toute exposition publique.
+- [x] Restructuration en groupe de routes `(dashboard)` pour que `/login` reste un écran
+      plein-page sans exposer le menu avant authentification
+- [x] `vercel.json` avec cron pointant vers `/api/engine/scan` (limite du plan Hobby
+      documentée : 1 exécution/jour, Pro lève la limite)
+- [x] `docs/deployment.md` réécrit avec la procédure Vercel + Postgres + Cron complète
+- [x] Nettoyage : `ATLAS_ADMIN_SECRET` (jamais utilisé) remplacé par `CRON_SECRET`
+      (réellement câblé)
+- [ ] **Actions restant à ta charge, non automatisables** : créer un compte Vercel,
+      provisionner une base Postgres, définir `SITE_PASSWORD`/`CRON_SECRET`/`DATABASE_URL`
+      en production, lancer le déploiement. Étapes détaillées dans `docs/deployment.md`.
+
 ## PHASE 5 — Real Providers *(bloqué sur clé API externe — voir ci-dessous)*
 
 - [ ] Intégration Duffel (nécessite `DUFFEL_API_KEY` — **action utilisateur requise**,
