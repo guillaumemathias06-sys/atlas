@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-09-15 (suite 3) — Tests d'intégration (section 27)
+
+Jusqu'ici, seule la logique pure (scoring, purchase policy, durée) était testée
+automatiquement ; le moteur de scan, la déduplication des alertes et les routes API
+n'étaient vérifiés que manuellement (`scripts/dev-test-engine.ts`, navigateur). Section 27
+demande explicitement des tests d'intégration en plus des tests unitaires.
+
+- `tests/integration/globalSetup.ts` : base SQLite isolée (`prisma/test.db`, jamais
+  `dev.db`), créée avant la suite et détruite après, via `prisma db push`.
+- `tests/integration/engine.test.ts` : planification + exécution d'un cycle de scan
+  complet contre la vraie base (provider mock), y compris moteur désactivé et
+  destinations bannies.
+- `tests/integration/alerts.test.ts` : déduplication des alertes contre la vraie base
+  (pas de spam pour un deal équivalent, nouvelle alerte si le score progresse).
+- `tests/integration/api.test.ts` : `GET /api/health` et `POST /api/engine/scan` appelés
+  directement (sans serveur HTTP) et vérifiés contre la base de test.
+- `vitest.config.ts` : `fileParallelism: false` (SQLite ne supporte pas bien l'écriture
+  concurrente ; la suite reste rapide, donc sans coût réel).
+- 11 nouveaux tests (61 au total). Build/typecheck propres.
+
 ## 2026-09-15 (suite 2) — Observabilité complète sur System Health (section 28)
 
 - Dimensions manquantes ajoutées : latence moyenne des scans (24h), rythme d'observations

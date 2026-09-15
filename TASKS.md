@@ -51,7 +51,13 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
       pondération Fare/Flight de l'ATLAS Score via `applyProfileBias` (comfortWeight /
       priceWeight, somme des poids préservée). 6 nouveaux tests.
 
-## PHASE 4 — Alerts
+## PHASE 3ter — Tests d'intégration (section 27)
+
+- [x] Suite d'intégration contre une vraie base SQLite isolée (`prisma/test.db`, jamais
+      `dev.db`, créée/détruite automatiquement par `globalSetup.ts`) : moteur de scan de
+      bout en bout (planification + exécution + persistance + scoring), déduplication des
+      alertes, routes API `/api/health` et `POST /api/engine/scan`. 11 tests, 61 au total
+      avec les tests unitaires.
 
 - [x] Seuils hiérarchisés configurables (Intéressant/Bonne affaire/Grosse
       opportunité/Exceptionnel)
