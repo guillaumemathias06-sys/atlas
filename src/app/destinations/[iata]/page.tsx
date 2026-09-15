@@ -43,7 +43,9 @@ export default async function DestinationDetailPage({ params }: { params: { iata
       <a href="/destinations" className="text-xs text-atlas-muted hover:text-atlas-accent">← Toutes les destinations</a>
 
       <div className="mt-4">
-        <h1 className="font-display text-3xl font-bold text-atlas-text">{airport?.city ?? profile.iata}</h1>
+        <h1 className="font-display text-3xl font-bold text-atlas-text">
+          {airport?.city ?? profile.iata}{airport?.country && <span className="ml-2 text-lg font-normal text-atlas-muted">{airport.country}</span>}
+        </h1>
         <p className="mt-1 text-sm text-atlas-muted">{profile.region} · {profile.description}</p>
       </div>
 

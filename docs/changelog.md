@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-15 — Audit systématique des champs du schéma, horaires interdits, escales
+
+- Script d'audit : tous les champs de `prisma/schema.prisma` passés en revue pour
+  vérifier qu'ils sont réellement lus quelque part dans `src/`. A trouvé deux nouveaux
+  écarts (même famille de bug que la session précédente) :
+  - `UserSettings.forbiddenHoursStart`/`forbiddenHoursEnd` (section 14, "horaires
+    interdits") : totalement inutilisés. Corrigé — nouvelle carte dans Settings, branché
+    dans `computeFlightQualityScore` avec gestion du passage minuit.
+  - `TravelProfile.penalizeLongLayover`/`minLayoverMinutes`/`maxLayoverMinutes` : en
+    base et affichés sur la page Profiles, jamais évalués par le moteur (la donnée de
+    durée d'escale n'existait même pas sur `FlightOffer`/`PriceObservation`). Ajout du
+    champ `layoverMinutes`, calculé par le provider mock, désormais persisté et utilisé.
+- Petit polish : `Airport.country` (jamais affiché) apparaît maintenant sur la page
+  Destination Explorer détail.
+- 4 nouveaux tests unitaires (46 au total). Build/typecheck propres, vérifié dans le
+  navigateur.
+
 ## 2026-09-14 (nuit, suite) — Travel Profiles réellement appliqués au scoring
 
 - Les 3 profils de voyage (FAMILLE/COUPLE/DEAL_HUNTER, section 13) étaient purement

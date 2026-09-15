@@ -18,6 +18,7 @@ export interface FlightOffer {
   totalDurationMinutes: number;
   outboundDurationMinutes: number;
   inboundDurationMinutes: number;
+  layoverMinutes: number; // durée cumulée des escales, 0 si vol direct
   baggageIncluded: boolean;
   cabinClass: CabinClass;
   selfTransfer: boolean;

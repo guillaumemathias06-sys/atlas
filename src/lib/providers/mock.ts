@@ -103,6 +103,7 @@ export class MockFlightProvider implements FlightProvider {
         totalDurationMinutes,
         outboundDurationMinutes: Math.round(totalDurationMinutes * 0.5),
         inboundDurationMinutes: Math.round(totalDurationMinutes * 0.5),
+        layoverMinutes,
         baggageIncluded: rand() > 0.4,
         cabinClass,
         selfTransfer,

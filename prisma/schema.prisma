@@ -118,6 +118,7 @@ model PriceObservation {
   totalDurationMinutes Int
   outboundDurationMinutes Int?
   inboundDurationMinutes  Int?
+  layoverMinutes Int @default(0) // durée cumulée des escales, utilisée par le profil de voyage actif
   baggageIncluded Boolean @default(false)
   cabinClass     String   @default("ECONOMY")
   selfTransfer   Boolean  @default(false) // correspondance non protégée

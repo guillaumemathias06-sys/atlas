@@ -116,6 +116,34 @@ describe("Flight Quality Score (section 10)", () => {
     const outsideWindow = computeFlightQualityScore({ ...base, departTime: "05:00", earliestDeparture: "07:00", latestDeparture: "21:00" });
     expect(outsideWindow.score).toBeLessThan(withinWindow.score);
   });
+
+  it("pénalise une correspondance trop courte par rapport au minimum du profil", () => {
+    const base = { stops: 1, totalDurationMinutes: 400, bestKnownDurationMinutes: 380, departTime: "10:00", arriveTime: "16:00", selfTransfer: false, baggageIncluded: true };
+    const tight = computeFlightQualityScore({ ...base, layoverMinutes: 30, minLayoverMinutes: 60 });
+    const comfortable = computeFlightQualityScore({ ...base, layoverMinutes: 90, minLayoverMinutes: 60 });
+    expect(tight.score).toBeLessThan(comfortable.score);
+  });
+
+  it("pénalise une correspondance trop longue seulement si le profil le demande (penalizeLongLayover)", () => {
+    const base = { stops: 1, totalDurationMinutes: 600, bestKnownDurationMinutes: 380, departTime: "10:00", arriveTime: "16:00", selfTransfer: false, baggageIncluded: true, layoverMinutes: 400, maxLayoverMinutes: 180 };
+    const dealHunter = computeFlightQualityScore({ ...base, penalizeLongLayover: false }); // tolère les longues attentes
+    const famille = computeFlightQualityScore({ ...base, penalizeLongLayover: true });
+    expect(famille.score).toBeLessThan(dealHunter.score);
+  });
+
+  it("pénalise un horaire dans la plage interdite (section 14), même avec un vol direct par ailleurs correct", () => {
+    const base = { stops: 0, totalDurationMinutes: 300, bestKnownDurationMinutes: 300, arriveTime: "10:00", selfTransfer: false, baggageIncluded: true };
+    const forbidden = computeFlightQualityScore({ ...base, departTime: "02:00", forbiddenHoursStart: "00:00", forbiddenHoursEnd: "05:00" });
+    const allowed = computeFlightQualityScore({ ...base, departTime: "09:00", forbiddenHoursStart: "00:00", forbiddenHoursEnd: "05:00" });
+    expect(forbidden.score).toBeLessThan(allowed.score);
+  });
+
+  it("gère une plage interdite qui chevauche minuit", () => {
+    const base = { stops: 0, totalDurationMinutes: 300, bestKnownDurationMinutes: 300, arriveTime: "10:00", selfTransfer: false, baggageIncluded: true };
+    const withinOvernight = computeFlightQualityScore({ ...base, departTime: "23:30", forbiddenHoursStart: "22:00", forbiddenHoursEnd: "06:00" });
+    const outsideOvernight = computeFlightQualityScore({ ...base, departTime: "12:00", forbiddenHoursStart: "22:00", forbiddenHoursEnd: "06:00" });
+    expect(withinOvernight.score).toBeLessThan(outsideOvernight.score);
+  });
 });
 
 describe("Biais de profil sur la pondération ATLAS (section 13)", () => {

@@ -89,6 +89,12 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 - [ ] Intégration Google Calendar (nécessite OAuth — **action utilisateur requise**)
 - [x] Purchase Policy Engine (4 modes, kill switch, mandat déterministe)
 - [x] Tests du Purchase Policy Engine (cas limites du cahier des charges)
+- [x] Correctif : `forbiddenHoursStart`/`forbiddenHoursEnd` (section 14, "horaires
+      interdits") étaient modélisés mais totalement inutilisés — ni dans le scoring, ni
+      dans l'UI. Ajout d'un champ `layoverMinutes` sur `PriceObservation`/`FlightOffer`
+      (calculé par le mock, absent avant) pour pouvoir aussi évaluer
+      `penalizeLongLayover`/`minLayoverMinutes`/`maxLayoverMinutes` du profil actif, qui
+      étaient déjà en base mais jamais lus par le moteur. 4 nouveaux tests.
 - [x] Correctif : `allowedProfileIds`/`allowedDestinationIatas` du mandat d'achat étaient
       modélisés et déjà lus par `evaluateMandateCriteria`, mais jamais éditables dans
       l'UI Automation (champ mort côté formulaire) — corrigé, cases à cocher par profil +

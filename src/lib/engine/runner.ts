@@ -131,6 +131,7 @@ export async function runScanCycle(maxTasks = 15): Promise<ScanCycleSummary> {
           totalDurationMinutes: best.totalDurationMinutes,
           outboundDurationMinutes: best.outboundDurationMinutes,
           inboundDurationMinutes: best.inboundDurationMinutes,
+          layoverMinutes: best.layoverMinutes,
           baggageIncluded: best.baggageIncluded,
           cabinClass: best.cabinClass,
           selfTransfer: best.selfTransfer,
@@ -190,6 +191,12 @@ export async function runScanCycle(maxTasks = 15): Promise<ScanCycleSummary> {
         latestDeparture: activeProfile?.latestDeparture,
         maxStopsPreferred: activeProfile?.maxStops ?? settings.maxStops,
         selfTransferAllowed: activeProfile?.maxSelfTransfer,
+        layoverMinutes: best.layoverMinutes,
+        minLayoverMinutes: activeProfile?.minLayoverMinutes,
+        maxLayoverMinutes: activeProfile?.maxLayoverMinutes,
+        penalizeLongLayover: activeProfile?.penalizeLongLayover,
+        forbiddenHoursStart: settings.forbiddenHoursStart,
+        forbiddenHoursEnd: settings.forbiddenHoursEnd,
       });
 
       // --- Duration fit ---

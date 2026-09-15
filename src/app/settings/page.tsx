@@ -90,6 +90,12 @@ export default async function SettingsPage() {
             <Field label="Régions favorites">
               <input type="text" name="favoriteRegions" defaultValue={jsonToCsv(settings.favoriteRegions)} className={inputClass} />
             </Field>
+            <Field label="Horaires interdits — début" hint="jamais de vol recommandé dans cette plage">
+              <input type="time" name="forbiddenHoursStart" defaultValue={settings.forbiddenHoursStart} className={inputClass} />
+            </Field>
+            <Field label="Horaires interdits — fin" hint="peut chevaucher minuit (ex. 23:00 → 05:00)">
+              <input type="time" name="forbiddenHoursEnd" defaultValue={settings.forbiddenHoursEnd} className={inputClass} />
+            </Field>
           </div>
         </Card>
 

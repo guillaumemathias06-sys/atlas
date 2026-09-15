@@ -91,6 +91,8 @@ export async function updateSettings(formData: FormData) {
       beachImportance: num("beachImportance", existing.beachImportance),
       requiredBaggage: String(formData.get("requiredBaggage") ?? existing.requiredBaggage),
       cabinClass: String(formData.get("cabinClass") ?? existing.cabinClass),
+      forbiddenHoursStart: String(formData.get("forbiddenHoursStart") ?? existing.forbiddenHoursStart),
+      forbiddenHoursEnd: String(formData.get("forbiddenHoursEnd") ?? existing.forbiddenHoursEnd),
     },
   });
   await prisma.auditLog.create({ data: { action: "SETTINGS_UPDATED" } });
