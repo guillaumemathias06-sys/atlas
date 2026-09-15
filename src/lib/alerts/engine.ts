@@ -1,6 +1,7 @@
 // Système d'alertes hiérarchisées (section 12) — dédupliqué, anti-spam.
 import { prisma } from "@/lib/db";
 import type { AlertTier } from "@/types";
+import { channels } from "@/lib/alerts/channels/types";
 
 export interface AlertThresholds {
   interesting: number;
@@ -67,7 +68,7 @@ export async function maybeCreateAlert(params: MaybeCreateAlertParams) {
 
   const message = `${tierLabel[tier] ?? tier} — ${params.destinationIata} à ${params.priceEUR}€ (ATLAS ${params.atlasScore}/100). ${params.explanation}`;
 
-  return prisma.alert.create({
+  const alert = await prisma.alert.create({
     data: {
       dealId: params.dealId,
       tier,
@@ -76,4 +77,14 @@ export async function maybeCreateAlert(params: MaybeCreateAlertParams) {
       dedupeKey,
     },
   });
+
+  // Diffuse sur tous les canaux configurés (section 12). InAppChannel est un no-op (déjà
+  // persisté ci-dessus) ; TELEGRAM/EMAIL s'auto-désactivent tant que leurs variables
+  // d'environnement ne sont pas renseignées — ceci n'a donc aucun effet tant que
+  // l'utilisateur n'a pas explicitement configuré une clé.
+  await Promise.allSettled(
+    channels.filter((c) => c.configured).map((c) => c.send(message))
+  );
+
+  return alert;
 }

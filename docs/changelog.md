@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-15 (suite 4) — Canaux de notification réellement branchés
+
+- `src/lib/alerts/channels/types.ts` exportait `channels` (IN_APP/TELEGRAM/EMAIL) mais
+  rien ne l'appelait jamais depuis `maybeCreateAlert` — configurer une clé Telegram
+  aujourd'hui n'aurait eu aucun effet. Corrigé : chaque alerte est diffusée sur les
+  canaux dont `configured === true`. Sans clé renseignée (cas par défaut), effet nul —
+  seulement `IN_APP` (déjà persisté en base) reste actif.
+
 ## 2026-09-15 (suite 3) — Tests d'intégration (section 27)
 
 Jusqu'ici, seule la logique pure (scoring, purchase policy, durée) était testée

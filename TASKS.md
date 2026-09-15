@@ -62,7 +62,9 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 - [x] Seuils hiérarchisés configurables (Intéressant/Bonne affaire/Grosse
       opportunité/Exceptionnel)
 - [x] Déduplication (pas de spam, re-alerte seulement si amélioration notable)
-- [x] Abstraction canaux (`IN_APP` actif, `EMAIL`/`TELEGRAM` préparés non connectés)
+- [x] Abstraction canaux (`IN_APP` actif ; `EMAIL`/`TELEGRAM` s'activent automatiquement
+      dès que leurs variables d'environnement sont renseignées — correctif : le tableau
+      `channels` était exporté mais jamais appelé depuis `maybeCreateAlert`)
 - [x] Écran Alerts avec marquage lu/non lu
 - [x] Dashboard Top Opportunities + stats (scans du jour, deals détectés, etc.)
 
