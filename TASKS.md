@@ -9,6 +9,9 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 - [x] Schéma de données complet (`prisma/schema.prisma`)
 - [x] Décision SQLite (dev) / PostgreSQL (prod), documentée
 - [x] Design system Tailwind (thème aviation/intelligence, dark)
+- [x] États loading/erreur/404 globaux (section 24) — `loading.tsx`, `error.tsx`,
+      `not-found.tsx` stylés cohérents avec le thème, couvrent toutes les routes via le
+      mécanisme de Suspense/error-boundary de l'App Router
 - [x] Layout + navigation (11 écrans)
 - [x] Seed de démonstration (aéroports, destinations, profils, réglages)
 - [x] `.env.example`, `.gitignore`, aucun secret committé

@@ -96,12 +96,13 @@ export function Button({
   variant = "primary",
   type = "button",
   className = "",
+  ...rest
 }: {
   children: ReactNode;
   variant?: "primary" | "ghost" | "danger";
   type?: "button" | "submit";
   className?: string;
-}) {
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const variants: Record<string, string> = {
     primary: "bg-atlas-accent text-atlas-bg hover:brightness-110 shadow-glow",
     ghost: "bg-transparent border border-atlas-border text-atlas-text hover:border-atlas-accent/50",
@@ -111,6 +112,7 @@ export function Button({
     <button
       type={type}
       className={`rounded-lg px-4 py-2 text-sm font-medium transition ${variants[variant]} ${className}`}
+      {...rest}
     >
       {children}
     </button>

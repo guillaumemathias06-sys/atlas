@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-15 (suite) — États loading/erreur/404 (section 24)
+
+- `src/app/loading.tsx` : squelette animé, couvre automatiquement toutes les routes sans
+  loading.tsx propre (mécanisme de Suspense de l'App Router).
+- `src/app/error.tsx` : error boundary stylé (remplace l'écran d'erreur générique
+  Next.js), bouton "Réessayer" + retour dashboard, détail technique en dev uniquement.
+- `src/app/not-found.tsx` : 404 stylé cohérent avec le thème.
+- `Button` accepte désormais les props natives du `<button>` (onClick, disabled, etc.),
+  nécessaire pour error.tsx qui est un composant client.
+
 ## 2026-09-15 — Audit systématique des champs du schéma, horaires interdits, escales
 
 - Script d'audit : tous les champs de `prisma/schema.prisma` passés en revue pour
