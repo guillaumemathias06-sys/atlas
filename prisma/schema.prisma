@@ -1,14 +1,14 @@
 // ATLAS — schéma de données
-// NOTE ARCHITECTURE: provider "sqlite" en local (zéro-config, fonctionne sans rien installer).
-// Le schéma est écrit pour être 100% portable vers PostgreSQL en production :
-// il suffit de changer `provider = "postgresql"` + DATABASE_URL. Voir /docs/architecture.md.
+// Cette branche (deploy/postgres-ready) bascule le provider sur PostgreSQL pour la mise
+// en ligne. `main` reste en SQLite (zéro-config pour le développement local). Voir
+// /docs/deployment.md pour la procédure de fusion au moment du déploiement.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
