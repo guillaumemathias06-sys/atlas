@@ -190,13 +190,21 @@ export default async function SettingsPage() {
         </Card>
 
         <Card className="mt-6">
-          <CardHeader title="Mode du moteur" />
-          <div className="flex items-center gap-3 p-5">
-            <label className="flex items-center gap-2 text-sm text-atlas-text">
-              <input type="checkbox" name="simulationMode" defaultChecked={settings.simulationMode} className="accent-atlas-accent" />
-              Mode simulation (mock, sans clé API)
-            </label>
-            {!process.env.DUFFEL_API_KEY && <Badge tone="warn">Aucun provider réel configuré</Badge>}
+          <CardHeader title="Mode du moteur" subtitle="Coût réel des recherches — voir docs/providers.md" />
+          <div className="space-y-4 p-5">
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm text-atlas-text">
+                <input type="checkbox" name="simulationMode" defaultChecked={settings.simulationMode} className="accent-atlas-accent" />
+                Mode simulation (mock, sans clé API)
+              </label>
+              {!process.env.DUFFEL_API_KEY && <Badge tone="warn">Aucun provider réel configuré</Badge>}
+            </div>
+            <Field
+              label="Plafond de dépense mensuelle en mode réel (€)"
+              hint="Dès que ce plafond serait atteint dans le mois, ATLAS bascule automatiquement en simulation jusqu'au mois suivant — aucune intervention nécessaire, jamais de dépassement."
+            >
+              <input type="number" step="1" min="0" name="maxMonthlySearchSpendEUR" defaultValue={settings.maxMonthlySearchSpendEUR} className={`${inputClass} max-w-[160px]`} />
+            </Field>
           </div>
         </Card>
 

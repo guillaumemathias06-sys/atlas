@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { Card, CardHeader, Badge, StatTile } from "@/components/ui";
 import { listProviders } from "@/lib/providers";
 import { computeSystemAlerts } from "@/lib/health/systemAlerts";
+import { getSearchBudgetStatus } from "@/lib/engine/searchBudget";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function HealthPage() {
 
   const providers = listProviders();
   const errorRate24h = scanLogs24h > 0 ? Math.round((errorLogs24h / scanLogs24h) * 100) : 0;
+  const searchBudget = await getSearchBudgetStatus(settings?.maxMonthlySearchSpendEUR ?? 70);
   const systemAlerts = computeSystemAlerts({
     engineEnabled: settings?.engineEnabled ?? false,
     pendingTasksCount: pendingCount,
@@ -89,6 +91,32 @@ export default async function HealthPage() {
           {providers.map((p) => (
             <Badge key={p.name} tone={p.configured ? "good" : "neutral"}>{p.name}: {p.configured ? "configuré" : "non configuré (mock actif)"}</Badge>
           ))}
+        </div>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader
+          title="Plafond de dépense — recherches en mode réel"
+          subtitle="Bascule automatique en simulation dès le plafond atteint (docs/providers.md)"
+          right={<Badge tone={searchBudget.budgetExceeded ? "danger" : "good"}>{searchBudget.budgetExceeded ? "PLAFOND ATTEINT" : "SOUS LE PLAFOND"}</Badge>}
+        />
+        <div className="grid grid-cols-2 gap-4 p-5 md:grid-cols-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-atlas-muted">Recherches ce mois</p>
+            <p className="mt-1 font-display text-xl font-semibold text-atlas-text">{searchBudget.searchesThisMonth}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-atlas-muted">Dépense estimée</p>
+            <p className="mt-1 font-display text-xl font-semibold text-atlas-text">{searchBudget.estimatedSpendEUR.toFixed(2)}€</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-atlas-muted">Plafond configuré</p>
+            <p className="mt-1 font-display text-xl font-semibold text-atlas-text">{searchBudget.maxMonthlySpendEUR}€</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-atlas-muted">Mode actuel</p>
+            <p className="mt-1 font-display text-xl font-semibold text-atlas-text">{settings?.simulationMode ? "Simulation" : "Réel"}</p>
+          </div>
         </div>
       </Card>
 

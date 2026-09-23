@@ -330,6 +330,11 @@ model UserSettings {
   engineEnabled Boolean @default(true)
   simulationMode Boolean @default(true) // tant qu'aucun provider réel n'est configuré
 
+  // Plafond de dépense (section : coût réel des recherches, docs/providers.md). Basculement
+  // automatique et forcé vers le mock dès que ce plafond serait dépassé dans le mois en
+  // cours — voir src/lib/engine/searchBudget.ts. Défaut prudent, ajustable ici.
+  maxMonthlySearchSpendEUR Float @default(70)
+
   updatedAt DateTime @updatedAt
 }
 

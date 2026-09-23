@@ -84,6 +84,7 @@ export async function updateSettings(formData: FormData) {
       weightDuration: num("weightDuration", existing.weightDuration) / 100,
       weightPreference: num("weightPreference", existing.weightPreference) / 100,
       simulationMode: formData.get("simulationMode") === "on",
+      maxMonthlySearchSpendEUR: num("maxMonthlySearchSpendEUR", existing.maxMonthlySearchSpendEUR),
       preferredTempMinC: num("preferredTempMinC", existing.preferredTempMinC),
       preferredTempMaxC: num("preferredTempMaxC", existing.preferredTempMaxC),
       weatherImportance: num("weatherImportance", existing.weatherImportance),
