@@ -12,7 +12,7 @@ export async function runScanNow(): Promise<void> {
     data: { action: "MANUAL_SCAN", metadata: JSON.stringify({ planned, summary }) },
   });
   revalidatePath("/");
-  revalidatePath("/engine");
+  revalidatePath("/health");
   revalidatePath("/deals");
   revalidatePath("/alerts");
   revalidatePath("/map");
@@ -21,7 +21,7 @@ export async function runScanNow(): Promise<void> {
 export async function toggleEngine(enabled: boolean) {
   await prisma.userSettings.update({ where: { id: "singleton" }, data: { engineEnabled: enabled } });
   await prisma.auditLog.create({ data: { action: enabled ? "ENGINE_ENABLED" : "ENGINE_DISABLED" } });
-  revalidatePath("/engine");
+  revalidatePath("/health");
   revalidatePath("/");
 }
 
