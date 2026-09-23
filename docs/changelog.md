@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-09-23 (suite) — Plafond de dépense dur (jamais de dépassement)
+
+Activé le mode réel en production, puis Guillaume a demandé une garantie de ne jamais
+dépasser 70€/mois. Plutôt que de promettre un chiffre approximatif, vérification empirique
+du modèle tarifaire Duffel (WebSearch + WebFetch sur duffel.com/pricing, pas une
+estimation de mémoire) : le ratio recherche/réservation gratuit est 1500:1 — donc 0 avec 0
+réservation, ce qu'ATLAS fait toujours par conception. **Aucune recherche réelle n'est
+jamais gratuite en continu avec ce provider** ; la fréquence de cron n'y change rien.
+
+- `src/lib/engine/searchBudget.ts` : plafond de dépense mensuelle dur
+  (`UserSettings.maxMonthlySearchSpendEUR`, défaut 70€). Compte les recherches non-mock du
+  mois en cours (`ScanLog`), bascule de force sur le mock dès que la prochaine recherche
+  dépasserait le plafond — prime sur `simulationMode`. Estimation par recherche
+  volontairement majorée (0,005€) pour garder une marge de sécurité réelle.
+  Une entrée `AuditLog` (déduplique à 1/jour) trace chaque bascule forcée.
+  Réglable dans Settings, visible en temps réel (dépense estimée vs plafond) sur
+  System Health.
+- Production repassée en mode réel avec ce garde-fou actif — confirmé fonctionnel.
+- 5 nouveaux tests (83 au total), dont un scénario de dépassement réel simulé à 14 000
+  recherches. Build/typecheck propres.
+
 ## 2026-09-23 — Intégration Duffel (provider réel)
 
 Guillaume a fourni ses clés Duffel (test puis live). Structure de réponse de l'API v2

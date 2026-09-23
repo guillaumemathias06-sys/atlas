@@ -101,9 +101,19 @@ Le développement se termine par une mise en ligne réelle (décision de Guillau
       pour ne pas exploser le ratio recherche/réservation facturé par Duffel
 - [x] Bascule automatique mock→réel selon `UserSettings.simulationMode` (déjà existant,
       confirmé fonctionnel avec le vrai provider)
-- [ ] **Reste à décider avec Guillaume** : activer `simulationMode = false` en production
-      (actuellement toujours `true`, y compris après ce commit — bascule jamais faite sans
-      confirmation explicite, voir `docs/providers.md`)
+- [x] Activé en production le 23/09/2026 avec plafond de dépense dur codé (voir
+      ci-dessous) — décision prise avec Guillaume après vérification du modèle
+      tarifaire Duffel réel (WebSearch/WebFetch, pas une estimation de mémoire)
+- [x] **Plafond de dépense mensuelle** (`src/lib/engine/searchBudget.ts`,
+      `UserSettings.maxMonthlySearchSpendEUR`, défaut 70€ — demande explicite de
+      Guillaume) : bascule automatique et forcée vers le mock dès que le plafond serait
+      dépassé dans le mois calendaire en cours, quel que soit `simulationMode`. Visible
+      sur Settings (réglable) et System Health (dépense en cours vs plafond). Détecté
+      empiriquement (WebFetch sur duffel.com/pricing) que le ratio recherche/réservation
+      gratuit de Duffel est 1500:1 — donc 0 avec 0 réservation, ce qu'ATLAS fait toujours
+      par conception : **aucune recherche réelle n'est jamais gratuite**, le plafond est
+      la seule protection possible, pas une question de fréquence de cron. 5 nouveaux
+      tests (dont un scénario de dépassement réel à 14 000 recherches simulées).
 - [ ] Intégration météo/saisonnalité réelle (OpenWeather ou équivalent — clé API requise)
 
 ## PHASE 6 — Advanced

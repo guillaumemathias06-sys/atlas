@@ -67,9 +67,23 @@ Conséquences pour la Phase 5, quand elle sera activée :
   sécurité du projet, cette bascule ne sera jamais faite automatiquement : elle nécessite
   ta clé API ET ta confirmation explicite, quel que soit l'état du reste du roadmap.
 
-**Garde-fou implémenté** (`src/lib/engine/scanVolume.ts`) : dès que
-`simulationMode = false`, le volume par cycle passe automatiquement de 40 tâches
-planifiées / 25 exécutées (mode simulation) à **10 planifiées / 5 exécutées**. Sur le cron
-de production (toutes les 15 min), ça plafonne à ~480 recherches/jour maximum au lieu de
-~2400 — encore à surveiller de près au démarrage, mais une réduction volontaire avant
-d'aller plus loin (fréquence de cron, cache par route) si le volume doit encore baisser.
+**Garde-fou de volume** (`src/lib/engine/scanVolume.ts`) : dès que `simulationMode =
+false`, le volume par cycle passe automatiquement de 40 tâches planifiées / 25 exécutées
+(mode simulation) à **10 planifiées / 5 exécutées** — une première ligne de défense contre
+les rafales, mais qui ne borne pas la dépense cumulée dans le temps.
+
+**Garde-fou de dépense — celui qui compte vraiment** (`src/lib/engine/searchBudget.ts`) :
+vérifié empiriquement (page tarifs officielle Duffel, pas une estimation) que le ratio
+recherche/réservation gratuit est de **1500 recherches par réservation confirmée dans le
+mois**. ATLAS ne réservant jamais rien automatiquement par conception, ce quota gratuit
+vaut **0 × 1500 = 0** — chaque recherche réelle est donc facturée dès la première
+(0,005$/recherche). **Il n'existe aucune façon de faire tourner le scan automatique en
+continu gratuitement avec ce provider.**
+
+Le seul levier fiable est donc un plafond de dépense dur, pas la fréquence de cron :
+`UserSettings.maxMonthlySearchSpendEUR` (défaut 70€, réglable dans Settings). Avant chaque
+cycle, ATLAS compte les recherches non-mock du mois en cours (`ScanLog`) et bascule de
+force sur le mock dès que la prochaine recherche dépasserait le plafond — indépendamment
+de `simulationMode`. Estimation volontairement majorée (0,005€/recherche, alors que le
+tarif réel converti en euros est légèrement inférieur), ce qui laisse une marge de
+sécurité. Visible en temps réel sur System Health.

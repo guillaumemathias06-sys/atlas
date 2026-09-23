@@ -12,6 +12,7 @@ import { durationFitScore } from "@/lib/duration/rules";
 import type { DurationRule } from "@/types";
 import { computeAtlasScore, generateExplanation, applyProfileBias, type AtlasWeights } from "@/lib/scoring/atlasScore";
 import { maybeCreateAlert, type AlertThresholds } from "@/lib/alerts/engine";
+import { getSearchBudgetStatus } from "@/lib/engine/searchBudget";
 import type { FlightOffer } from "@/types";
 
 function safeJsonArray(json: string): string[] {
@@ -52,7 +53,27 @@ export async function runScanCycle(maxTasks = 15): Promise<ScanCycleSummary> {
   const settings = await prisma.userSettings.findUnique({ where: { id: "singleton" } });
   if (!settings || !settings.engineEnabled) return summary;
 
-  const provider = getActiveProvider(!settings.simulationMode);
+  // Plafond de dépense (docs/providers.md) : même si simulationMode=false et qu'un
+  // provider réel est configuré, on retombe de force sur le mock dès que le plafond
+  // mensuel serait dépassé. Cette vérification prime sur simulationMode.
+  let preferReal = !settings.simulationMode;
+  if (preferReal) {
+    const budget = await getSearchBudgetStatus(settings.maxMonthlySearchSpendEUR);
+    if (budget.budgetExceeded) {
+      preferReal = false;
+      // Une seule entrée d'audit par jour suffit à tracer le basculement (le cron tourne
+      // plusieurs fois par heure ; pas la peine de dupliquer le même constat à chaque tick).
+      const loggedToday = await prisma.auditLog.findFirst({
+        where: { action: "SEARCH_BUDGET_EXCEEDED_FALLBACK_TO_MOCK", createdAt: { gte: new Date(Date.now() - 86400000) } },
+      });
+      if (!loggedToday) {
+        await prisma.auditLog.create({
+          data: { action: "SEARCH_BUDGET_EXCEEDED_FALLBACK_TO_MOCK", metadata: JSON.stringify(budget) },
+        });
+      }
+    }
+  }
+  const provider = getActiveProvider(preferReal);
 
   // Profil de voyage actif (section 13) — module les seuils de qualité de vol et la
   // pondération ATLAS Score. Sans profil actif, comportement neutre (biais nul).
