@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-09-23 (suite 5) — Calibration de la projection + trait aminci
+
+Retour de Guillaume sur une capture en pleine largeur (pas la même taille que mon aperçu
+de vérification) : "les points ne sont pas bien placés" et "le tracé est trop épais". Les
+deux étaient réels.
+
+- **Mauvaise projection** : j'avais supposé que le tracé source (`worldMapPaths.ts`)
+  couvrait exactement -180°/180° de longitude et -90°/90° de latitude. En réalité c'est un
+  tracé rogné (pas un planisphère théorique complet), donc cette hypothèse décalait tout —
+  Amsterdam apparaissait près du Japon, Tokyo près de la Russie. Corrigé en calibrant
+  empiriquement : extraction des tracés de 6 pays de référence bien répartis (Afrique du
+  Sud, Brésil, Inde, Allemagne, Mexique, Égypte) directement depuis le SVG source (parseur
+  de chemin SVG correct, gérant les commandes relatives/absolues — mon premier essai de
+  parsing regex naïf donnait des bounding boxes aberrantes), calcul de leur centre réel en
+  unités du tracé, puis régression linéaire contre leurs coordonnées géographiques connues.
+  Écart résiduel < 1% sur tous les points de calibration.
+- `project()` extrait dans `src/lib/geo/projection.ts` (était une fonction locale non
+  testable dans la page) — testé (`tests/projection.test.ts`, 2 tests de non-régression :
+  positions relatives par grande région + proximité des points de calibration).
+- Trait aminci (`strokeWidth` 2.2→1, `feGaussianBlur stdDeviation` 2.5→1.1) — halo plus
+  fin, moins "empâté".
+- Vérifié dans le navigateur à 1400px de large (pas seulement l'aperçu 800px) : chaque
+  destination tombe désormais sur le bon continent.
+
 ## 2026-09-23 (suite 4) — Carte du monde néon sur ATLAS Map
 
 Retour de Guillaume : "j'adore ça" sur la nav simplifiée, mais la carte n'était qu'une
