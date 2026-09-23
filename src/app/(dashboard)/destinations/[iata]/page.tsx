@@ -96,7 +96,7 @@ export default async function DestinationDetailPage({ params }: { params: { iata
                 <th className="py-1 font-normal">Temp. moy.</th>
                 <th className="py-1 font-normal">Pluie (mm)</th>
                 <th className="py-1 font-normal">Affluence</th>
-                <th className="py-1 font-normal">Season Score</th>
+                <th className="py-1 font-normal">Score saison</th>
               </tr>
             </thead>
             <tbody>

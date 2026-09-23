@@ -132,16 +132,16 @@ export default async function SettingsPage() {
         <Card className="mt-6">
           <CardHeader title="Pondération ATLAS Score" subtitle="En %, idéalement la somme fait 100" />
           <div className="grid grid-cols-2 gap-4 p-5 md:grid-cols-3">
-            <Field label="Fare Intelligence">
+            <Field label="Intelligence tarifaire">
               <input type="number" name="weightFare" defaultValue={weightPct(settings.weightFare)} className={inputClass} />
             </Field>
-            <Field label="Season">
+            <Field label="Saison">
               <input type="number" name="weightSeason" defaultValue={weightPct(settings.weightSeason)} className={inputClass} />
             </Field>
-            <Field label="Experience">
+            <Field label="Expérience">
               <input type="number" name="weightExperience" defaultValue={weightPct(settings.weightExperience)} className={inputClass} />
             </Field>
-            <Field label="Flight Quality">
+            <Field label="Qualité du vol">
               <input type="number" name="weightFlight" defaultValue={weightPct(settings.weightFlight)} className={inputClass} />
             </Field>
             <Field label="Adéquation durée">
