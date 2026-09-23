@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-23 (suite 4) — Carte du monde néon sur ATLAS Map
+
+Retour de Guillaume : "j'adore ça" sur la nav simplifiée, mais la carte n'était qu'une
+grille abstraite — demande explicite d'un vrai fond de carte du monde façon néon.
+
+- `src/components/worldMapPaths.ts` : silhouettes des continents (314 tracés de pays,
+  source "Simple World Map" par Al MacDonald/Fritz Lekschas, CC BY-SA 3.0 — attribution
+  affichée sur la page). Récupéré et nettoyé (ids retirés, compacté) sans consommer de
+  contexte en le faisant transiter par un script plutôt que par un gros bloc de texte.
+- `ATLAS Map` (`src/app/(dashboard)/map/page.tsx`) : la carte est intégrée via un `<svg>`
+  imbriqué (aligne automatiquement sa projection sur celle déjà utilisée pour positionner
+  les marqueurs, sans calibration manuelle), stylée en contour cyan lumineux avec un filtre
+  `feGaussianBlur` pour l'effet néon, plus un halo radial en fond.
+- Vérifié dans le navigateur : les marqueurs tombent bien sur les bons continents (Tokyo
+  au Japon, Reykjavik en Islande, etc.), le survol fonctionne toujours.
+
 ## 2026-09-23 (suite 3) — Simplification de la navigation
 
 Retour de Guillaume : trop d'écrans dont l'utilité n'est pas évidente au premier coup
