@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-23 (suite 3) — Simplification de la navigation
+
+Retour de Guillaume : trop d'écrans dont l'utilité n'est pas évidente au premier coup
+d'œil. Deux actions concrètes plutôt qu'un simple réagencement visuel :
+
+- **Fusion réelle** : "Search Engine Status" et "System Health" racontaient la même
+  histoire (moteur, providers, tâches) avec une bonne partie de contenu dupliqué. Fusionnés
+  en une seule page `/health` — les actions "Activer/Pause" et "Lancer un cycle
+  maintenant" rejoignent les stats, le plafond de dépense, la file de tâches et le journal
+  des scans. Route `/engine` supprimée, 11 pages au lieu de 12.
+- **Nav en deux groupes** (`src/components/Nav.tsx`) : "Découvrir" (Dashboard, Map, Deals,
+  Destinations, Alerts — l'usage quotidien) et "Réglages" (Price History, Travel Profiles,
+  Calendar, Automation, Settings, System Health — configuration/technique). Chaque entrée
+  porte désormais un sous-titre d'une ligne expliquant à quoi elle sert — plus aucun nom de
+  page sans contexte.
+
 ## 2026-09-23 (suite 2) — Restriction à Nice comme unique aéroport de départ
 
 Décision de Guillaume : un seul aéroport de départ actif (Nice), pour réduire le volume
