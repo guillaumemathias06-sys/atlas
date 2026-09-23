@@ -8,16 +8,18 @@ const AIRPORTS: Array<{
   iata: string; name: string; city: string; country: string;
   lat: number; lon: number; isOrigin: boolean; isDestinationOk: boolean;
   priority: number; distanceFromHomeKm?: number; accessCostEUR?: number; accessTimeMinutes?: number;
-  minSavingsToUseEUR?: number;
+  minSavingsToUseEUR?: number; allowed?: boolean;
 }> = [
-  // Aéroports de départ (section 3) — NCE = base par défaut
-  { iata: "NCE", name: "Nice Côte d'Azur", city: "Nice", country: "France", lat: 43.6584, lon: 7.2159, isOrigin: true, isDestinationOk: false, priority: 100, distanceFromHomeKm: 0, accessCostEUR: 0, accessTimeMinutes: 20, minSavingsToUseEUR: 0 },
-  { iata: "MRS", name: "Marseille Provence", city: "Marseille", country: "France", lat: 43.4393, lon: 5.2214, isOrigin: true, isDestinationOk: false, priority: 60, distanceFromHomeKm: 200, accessCostEUR: 25, accessTimeMinutes: 150, minSavingsToUseEUR: 150 },
-  { iata: "LYS", name: "Lyon Saint-Exupéry", city: "Lyon", country: "France", lat: 45.7256, lon: 5.0811, isOrigin: true, isDestinationOk: false, priority: 55, distanceFromHomeKm: 300, accessCostEUR: 35, accessTimeMinutes: 210, minSavingsToUseEUR: 200 },
-  { iata: "TRN", name: "Torino Caselle", city: "Turin", country: "Italie", lat: 45.2008, lon: 7.6497, isOrigin: true, isDestinationOk: false, priority: 50, distanceFromHomeKm: 250, accessCostEUR: 30, accessTimeMinutes: 180, minSavingsToUseEUR: 150 },
-  { iata: "MXP", name: "Milano Malpensa", city: "Milan", country: "Italie", lat: 45.6306, lon: 8.7281, isOrigin: true, isDestinationOk: false, priority: 65, distanceFromHomeKm: 350, accessCostEUR: 45, accessTimeMinutes: 240, minSavingsToUseEUR: 250 },
-  { iata: "LIN", name: "Milano Linate", city: "Milan", country: "Italie", lat: 45.4451, lon: 9.2767, isOrigin: true, isDestinationOk: false, priority: 55, distanceFromHomeKm: 350, accessCostEUR: 45, accessTimeMinutes: 240, minSavingsToUseEUR: 250 },
-  { iata: "GVA", name: "Genève Aéroport", city: "Genève", country: "Suisse", lat: 46.2381, lon: 6.1089, isOrigin: true, isDestinationOk: false, priority: 40, distanceFromHomeKm: 300, accessCostEUR: 40, accessTimeMinutes: 200, minSavingsToUseEUR: 200 },
+  // Aéroports de départ (section 3) — Nice est le SEUL aéroport de départ actif (décision
+  // de Guillaume, 23/09/2026, pour maîtriser le coût des recherches en mode réel). Les
+  // autres restent modélisés (réactivables depuis Settings) mais désactivés par défaut.
+  { iata: "NCE", name: "Nice Côte d'Azur", city: "Nice", country: "France", lat: 43.6584, lon: 7.2159, isOrigin: true, isDestinationOk: false, priority: 100, distanceFromHomeKm: 0, accessCostEUR: 0, accessTimeMinutes: 20, minSavingsToUseEUR: 0, allowed: true },
+  { iata: "MRS", name: "Marseille Provence", city: "Marseille", country: "France", lat: 43.4393, lon: 5.2214, isOrigin: true, isDestinationOk: false, priority: 60, distanceFromHomeKm: 200, accessCostEUR: 25, accessTimeMinutes: 150, minSavingsToUseEUR: 150, allowed: false },
+  { iata: "LYS", name: "Lyon Saint-Exupéry", city: "Lyon", country: "France", lat: 45.7256, lon: 5.0811, isOrigin: true, isDestinationOk: false, priority: 55, distanceFromHomeKm: 300, accessCostEUR: 35, accessTimeMinutes: 210, minSavingsToUseEUR: 200, allowed: false },
+  { iata: "TRN", name: "Torino Caselle", city: "Turin", country: "Italie", lat: 45.2008, lon: 7.6497, isOrigin: true, isDestinationOk: false, priority: 50, distanceFromHomeKm: 250, accessCostEUR: 30, accessTimeMinutes: 180, minSavingsToUseEUR: 150, allowed: false },
+  { iata: "MXP", name: "Milano Malpensa", city: "Milan", country: "Italie", lat: 45.6306, lon: 8.7281, isOrigin: true, isDestinationOk: false, priority: 65, distanceFromHomeKm: 350, accessCostEUR: 45, accessTimeMinutes: 240, minSavingsToUseEUR: 250, allowed: false },
+  { iata: "LIN", name: "Milano Linate", city: "Milan", country: "Italie", lat: 45.4451, lon: 9.2767, isOrigin: true, isDestinationOk: false, priority: 55, distanceFromHomeKm: 350, accessCostEUR: 45, accessTimeMinutes: 240, minSavingsToUseEUR: 250, allowed: false },
+  { iata: "GVA", name: "Genève Aéroport", city: "Genève", country: "Suisse", lat: 46.2381, lon: 6.1089, isOrigin: true, isDestinationOk: false, priority: 40, distanceFromHomeKm: 300, accessCostEUR: 40, accessTimeMinutes: 200, minSavingsToUseEUR: 200, allowed: false },
 
   // Destinations de démonstration (section 26)
   { iata: "NRT", name: "Narita", city: "Tokyo", country: "Japon", lat: 35.7719, lon: 140.3929, isOrigin: false, isDestinationOk: true, priority: 90 },
@@ -144,6 +146,7 @@ async function main() {
         isOrigin: a.isOrigin, isDestinationOk: a.isDestinationOk, priority: a.priority,
         distanceFromHomeKm: a.distanceFromHomeKm, accessCostEUR: a.accessCostEUR,
         accessTimeMinutes: a.accessTimeMinutes, minSavingsToUseEUR: a.minSavingsToUseEUR ?? 150,
+        allowed: a.allowed ?? true,
       },
     });
   }

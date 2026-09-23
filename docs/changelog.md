@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-23 (suite 2) — Restriction à Nice comme unique aéroport de départ
+
+Décision de Guillaume : un seul aéroport de départ actif (Nice), pour réduire le volume
+de recherches réelles et donc le coût, en plus du plafond de dépense dur déjà en place.
+
+- `scripts/restrict-to-nce.ts` : désactive les 6 autres aéroports de départ
+  (MRS/LYS/TRN/MXP/LIN/GVA), annule les tâches déjà en file pour eux (effet immédiat, pas
+  seulement sur les prochains cycles). Exécuté sur la base de production (288 tâches
+  annulées) et en local (96 tâches).
+- `prisma/seed.ts` mis à jour : les 6 aéroports restent modélisés (réactivables depuis
+  Settings à tout moment) mais `allowed: false` par défaut, pour qu'une réinitialisation
+  future de la base reflète ce choix sans avoir à relancer le script.
+- Vérifié : `planScans()` ne crée plus que des tâches au départ de NCE.
+
 ## 2026-09-23 (suite) — Plafond de dépense dur (jamais de dépassement)
 
 Activé le mode réel en production, puis Guillaume a demandé une garantie de ne jamais
