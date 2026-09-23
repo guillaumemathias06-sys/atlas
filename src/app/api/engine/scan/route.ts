@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { planScans } from "@/lib/engine/scanPlanner";
 import { runScanCycle } from "@/lib/engine/runner";
+import { getScanVolumeLimits } from "@/lib/engine/scanVolume";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Vercel : temps max d'exécution de la fonction (secondes)
@@ -24,8 +25,9 @@ async function triggerScan(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
-  const planned = await planScans(40);
-  const summary = await runScanCycle(25);
+  const { planLimit, runLimit } = await getScanVolumeLimits();
+  const planned = await planScans(planLimit);
+  const summary = await runScanCycle(runLimit);
   return NextResponse.json({ planned, summary });
 }
 

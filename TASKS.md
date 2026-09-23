@@ -90,12 +90,21 @@ Le développement se termine par une mise en ligne réelle (décision de Guillau
       provisionner une base Postgres, définir `SITE_PASSWORD`/`CRON_SECRET`/`DATABASE_URL`
       en production, lancer le déploiement. Étapes détaillées dans `docs/deployment.md`.
 
-## PHASE 5 — Real Providers *(bloqué sur clé API externe — voir ci-dessous)*
+## PHASE 5 — Real Providers
 
-- [ ] Intégration Duffel (nécessite `DUFFEL_API_KEY` — **action utilisateur requise**,
-      voir `docs/providers.md`)
+- [x] Intégration Duffel (Guillaume a fourni sa clé le 23/09/2026) — `src/lib/providers/duffel.ts`,
+      structure de réponse validée empiriquement (appel réel en mode test) avant d'écrire
+      l'adaptateur, 9 tests unitaires. Testé de bout en bout (recherche → scoring → deal)
+      avec le token de test, résultat correct (`provider: "duffel"`, prix/scores cohérents).
+- [x] Garde-fou de volume de scan (`src/lib/engine/scanVolume.ts`) — volume automatiquement
+      réduit (40→10 planifiées, 25→5 exécutées par cycle) dès qu'un provider réel est actif,
+      pour ne pas exploser le ratio recherche/réservation facturé par Duffel
+- [x] Bascule automatique mock→réel selon `UserSettings.simulationMode` (déjà existant,
+      confirmé fonctionnel avec le vrai provider)
+- [ ] **Reste à décider avec Guillaume** : activer `simulationMode = false` en production
+      (actuellement toujours `true`, y compris après ce commit — bascule jamais faite sans
+      confirmation explicite, voir `docs/providers.md`)
 - [ ] Intégration météo/saisonnalité réelle (OpenWeather ou équivalent — clé API requise)
-- [ ] Bascule automatique mock→réel selon configuration
 
 ## PHASE 6 — Advanced
 

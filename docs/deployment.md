@@ -28,8 +28,17 @@ N'importe quel Postgres managé convient (le schéma est portable — voir
 
 ### 2. Basculer le schéma sur PostgreSQL
 
-Une seule ligne à changer, jamais modifiée automatiquement pour ne pas casser le dev
-local :
+Déjà préparé sur la branche `deploy/postgres-ready` (validée : `prisma generate` et
+typecheck passent). Le jour du déploiement :
+
+```bash
+git checkout master
+git merge deploy/postgres-ready
+```
+
+`master` continue de fonctionner en SQLite tant que cette branche n'est pas fusionnée —
+aucun risque pour le développement local en attendant. Le changement lui-même est minime
+(une seule ligne, jamais modifiée automatiquement pour ne pas casser le dev local) :
 
 ```prisma
 // prisma/schema.prisma
