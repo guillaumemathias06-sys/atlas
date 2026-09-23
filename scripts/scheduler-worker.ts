@@ -4,6 +4,7 @@
 import cron from "node-cron";
 import { planScans } from "@/lib/engine/scanPlanner";
 import { runScanCycle } from "@/lib/engine/runner";
+import { getScanVolumeLimits } from "@/lib/engine/scanVolume";
 import { prisma } from "@/lib/db";
 
 async function tick() {
@@ -13,8 +14,9 @@ async function tick() {
     return;
   }
 
-  const planned = await planScans(40);
-  const summary = await runScanCycle(25);
+  const { planLimit, runLimit } = await getScanVolumeLimits();
+  const planned = await planScans(planLimit);
+  const summary = await runScanCycle(runLimit);
   console.log(
     `[${new Date().toISOString()}] planifiées=${planned.created} traitées=${summary.tasksProcessed} ` +
       `observations=${summary.observationsCreated} deals=${summary.dealsCreated} alertes=${summary.alertsCreated} erreurs=${summary.errors}`

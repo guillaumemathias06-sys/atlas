@@ -3,16 +3,25 @@
 // l'interface FlightProvider, quel que soit le provider actif.
 import type { FlightProvider } from "@/types";
 import { mockProvider } from "./mock";
+import { DuffelFlightProvider } from "./duffel";
 
-const registry: Record<string, FlightProvider> = {
-  mock: mockProvider,
-  // Phase 5: brancher ici DuffelProvider, AmadeusProvider, KiwiProvider...
-  // duffel: new DuffelProvider(process.env.DUFFEL_API_KEY),
-};
+function buildRegistry(): Record<string, FlightProvider> {
+  const registry: Record<string, FlightProvider> = { mock: mockProvider };
+  if (process.env.DUFFEL_API_KEY) {
+    registry["duffel"] = new DuffelFlightProvider(process.env.DUFFEL_API_KEY);
+  }
+  // Phase 5+: brancher ici AmadeusProvider, KiwiProvider...
+  return registry;
+}
 
-/** Provider actif. Pour l'instant contrôlé par simulationMode dans UserSettings (toujours mock si aucune clé n'est configurée). */
+/**
+ * Provider actif. `preferReal` reflète `!UserSettings.simulationMode` — tant que ce
+ * réglage reste à `true` (par défaut), ATLAS reste en mock quoi qu'il arrive, même si une
+ * clé API réelle est configurée. Voir docs/providers.md (coût des recherches).
+ */
 export function getActiveProvider(preferReal = false): FlightProvider {
-  if (preferReal && process.env.DUFFEL_API_KEY && registry["duffel"]) {
+  const registry = buildRegistry();
+  if (preferReal && registry["duffel"]) {
     return registry["duffel"]!;
   }
   return registry["mock"]!;

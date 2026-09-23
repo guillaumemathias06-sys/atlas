@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-23 — Intégration Duffel (provider réel)
+
+Guillaume a fourni ses clés Duffel (test puis live). Structure de réponse de l'API v2
+validée par un appel réel avant d'écrire l'adaptateur (plutôt que de deviner depuis la
+mémoire) — un appel `POST /air/offer_requests` en mode test a confirmé les noms de champs
+exacts (`total_amount`, `owner.name`, `slices[].segments[].duration` en ISO8601, etc.).
+
+- `src/lib/providers/duffel.ts` : implémente `FlightProvider`. Sémantique alignée sur le
+  mock : durée/horaires/escales portent sur le tronçon aller uniquement (cohérent avec les
+  règles de durée intelligente, section 4). `selfTransfer` toujours `false` (Duffel vend
+  des correspondances protégées sur une même offre).
+- Testé de bout en bout avec le token de test (gratuit) : recherche réelle → scoring →
+  deal créé avec `provider: "duffel"`, résultat cohérent.
+- **Garde-fou de coût ajouté** (`src/lib/engine/scanVolume.ts`) : dès qu'un provider réel
+  est actif (`simulationMode = false`), le volume par cycle passe de 40/25 à 10/5
+  (planifiées/exécutées) — répond au risque de ratio recherche/réservation documenté
+  précédemment (`docs/providers.md`).
+- **`simulationMode` reste à `true`** partout (local et production) : je ne l'ai pas
+  activé moi-même, conformément à la règle "jamais de dépense réelle sans confirmation
+  explicite". Décision à prendre avec Guillaume.
+- 11 nouveaux tests (78 au total). Build/typecheck propres.
+
 ## 2026-09-15 (suite 5) — Préparation à la mise en ligne
 
 Guillaume a précisé que la fin du développement sera une mise en ligne réelle. Le code est

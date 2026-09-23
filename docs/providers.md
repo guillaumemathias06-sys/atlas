@@ -24,21 +24,23 @@ tarifaires" volontaires sont injectées sur quelques routes de démonstration
 charges (Tokyo exceptionnel, alternative Milan compétitive, etc.). Le prix "respire" dans
 le temps (bucket de 6h) pour simuler un marché vivant.
 
-## Providers réels (Phase 5, non connectés)
+## Duffel (connecté, Phase 5)
 
-Pour brancher un fournisseur réel :
+`src/lib/providers/duffel.ts` implémente `FlightProvider` contre l'API Duffel v2
+(`POST /air/offer_requests?return_offers=true`), structure validée empiriquement avant
+d'écrire l'adaptateur. Activé automatiquement dès que `DUFFEL_API_KEY` est configuré ET
+`UserSettings.simulationMode = false` (jamais les deux à la fois par défaut — voir
+"garde-fou de volume" ci-dessous).
 
-1. Créer `src/lib/providers/<nom>.ts` implémentant `FlightProvider`.
-2. L'enregistrer dans `registry` (`src/lib/providers/index.ts`).
-3. Ajouter la clé API correspondante dans `.env` (voir `.env.example`).
+Sémantique de mapping (voir commentaires dans le fichier) : les champs de durée/horaires/
+escales portent sur le **tronçon aller uniquement** (`slices[0]`), cohérent avec les règles
+de durée intelligente (section 4) qui évaluent le temps pour REJOINDRE la destination.
+Les offres Duffel sont des correspondances protégées sur une même réservation —
+`selfTransfer` est donc toujours `false` pour ce provider (pas de billets séparés).
 
-Candidats recommandés, par ordre de préférence :
-
-- **Duffel** — sandbox gratuite, données réelles, API moderne. Nécessite `DUFFEL_API_KEY`.
-- **Amadeus for Developers** — alternative établie. Nécessite `AMADEUS_CLIENT_ID` /
-  `AMADEUS_CLIENT_SECRET`.
-- **Kiwi/Tequila** — bon pour les combinaisons multi-compagnies. Nécessite
-  `KIWI_API_KEY`.
+Autres candidats pour diversifier plus tard :
+- **Amadeus for Developers** — nécessite `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET`.
+- **Kiwi/Tequila** — bon pour les combinaisons multi-compagnies. Nécessite `KIWI_API_KEY`.
 
 **Ce point bloque uniquement la Phase 5, jamais le reste du projet** : tant qu'aucune clé
 n'est configurée, `UserSettings.simulationMode` reste `true` et ATLAS continue de
@@ -64,3 +66,10 @@ Conséquences pour la Phase 5, quand elle sera activée :
 - **Connecter un provider réel = dépense réelle progressive.** Conformément aux règles de
   sécurité du projet, cette bascule ne sera jamais faite automatiquement : elle nécessite
   ta clé API ET ta confirmation explicite, quel que soit l'état du reste du roadmap.
+
+**Garde-fou implémenté** (`src/lib/engine/scanVolume.ts`) : dès que
+`simulationMode = false`, le volume par cycle passe automatiquement de 40 tâches
+planifiées / 25 exécutées (mode simulation) à **10 planifiées / 5 exécutées**. Sur le cron
+de production (toutes les 15 min), ça plafonne à ~480 recherches/jour maximum au lieu de
+~2400 — encore à surveiller de près au démarrage, mais une réduction volontaire avant
+d'aller plus loin (fréquence de cron, cache par route) si le volume doit encore baisser.
