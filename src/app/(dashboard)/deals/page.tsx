@@ -41,6 +41,7 @@ export default async function DealsPage() {
                 returnDate: d.observation.returnDate,
                 tripLengthDays: d.observation.tripLengthDays,
                 stops: d.observation.stops,
+                returnStops: d.observation.returnStops,
                 airline: d.observation.airline,
               }}
             />

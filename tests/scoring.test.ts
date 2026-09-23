@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { computeFareScore } from "@/lib/scoring/fareScore";
 import { computeSeasonScore } from "@/lib/scoring/seasonScore";
 import { computeExperienceScore } from "@/lib/scoring/experienceScore";
-import { computeFlightQualityScore } from "@/lib/scoring/flightQualityScore";
+import { computeFlightQualityScore, type FlightQualityInput, type FlightLegInput } from "@/lib/scoring/flightQualityScore";
 import { computeAtlasScore, applyProfileBias, DEFAULT_WEIGHTS } from "@/lib/scoring/atlasScore";
 import { computePreferenceScore, type PreferenceInput } from "@/lib/scoring/preferenceScore";
 
@@ -70,78 +70,108 @@ describe("Experience Score (section 9)", () => {
   });
 });
 
-describe("Flight Quality Score (section 10)", () => {
-  it("pénalise fortement un trajet de 35h même à prix cassé", () => {
-    const result = computeFlightQualityScore({
-      stops: 2,
-      totalDurationMinutes: 35 * 60,
-      bestKnownDurationMinutes: 12 * 60,
-      departTime: "10:00",
-      arriveTime: "14:00",
-      selfTransfer: false,
+describe("Flight Quality Score (section 10) — aller ET retour", () => {
+  function perfectLeg(): FlightLegInput {
+    return { stops: 0, departTime: "10:00", arriveTime: "14:00", selfTransfer: false, layoverMinutes: 0 };
+  }
+  function baseInput(overrides: Partial<FlightQualityInput> = {}): FlightQualityInput {
+    return {
+      outbound: perfectLeg(),
+      returnLeg: perfectLeg(),
+      totalDurationMinutes: 240,
+      bestKnownDurationMinutes: 240,
       baggageIncluded: true,
-    });
+      ...overrides,
+    };
+  }
+
+  it("pénalise fortement un trajet aller de 35h même à prix cassé", () => {
+    const result = computeFlightQualityScore(
+      baseInput({ outbound: { ...perfectLeg(), stops: 2 }, totalDurationMinutes: 35 * 60, bestKnownDurationMinutes: 12 * 60 })
+    );
     expect(result.score).toBeLessThan(50);
   });
 
-  it("pénalise une correspondance non protégée (self-transfer)", () => {
-    const protectedResult = computeFlightQualityScore({
-      stops: 1, totalDurationMinutes: 600, bestKnownDurationMinutes: 550,
-      departTime: "10:00", arriveTime: "18:00", selfTransfer: false, baggageIncluded: true,
-    });
-    const selfTransferResult = computeFlightQualityScore({
-      stops: 1, totalDurationMinutes: 600, bestKnownDurationMinutes: 550,
-      departTime: "10:00", arriveTime: "18:00", selfTransfer: true, baggageIncluded: true,
-    });
-    expect(selfTransferResult.score).toBeLessThan(protectedResult.score);
+  it("cas central de la demande de Guillaume : un bel aller ne compense jamais un mauvais retour", () => {
+    const goodOutboundBadReturn = computeFlightQualityScore(
+      baseInput({ returnLeg: { stops: 2, departTime: "23:30", arriveTime: "04:00", selfTransfer: true, layoverMinutes: 480 } })
+    );
+    const bothGood = computeFlightQualityScore(baseInput());
+    expect(goodOutboundBadReturn.score).toBeLessThan(bothGood.score);
+    expect(goodOutboundBadReturn.reasons.some((r) => r.startsWith("Retour :"))).toBe(true);
+  });
+
+  it("symétriquement, un bon retour ne compense pas un mauvais aller", () => {
+    const badOutboundGoodReturn = computeFlightQualityScore(
+      baseInput({ outbound: { stops: 3, departTime: "23:30", arriveTime: "04:00", selfTransfer: true, layoverMinutes: 480 } })
+    );
+    const bothGood = computeFlightQualityScore(baseInput());
+    expect(badOutboundGoodReturn.score).toBeLessThan(bothGood.score);
+    expect(badOutboundGoodReturn.reasons.some((r) => r.startsWith("Aller :"))).toBe(true);
+  });
+
+  it("pénalise une correspondance non protégée (self-transfer), aller comme retour", () => {
+    const protectedResult = computeFlightQualityScore(baseInput({ outbound: { ...perfectLeg(), stops: 1 } }));
+    const selfTransferOutbound = computeFlightQualityScore(baseInput({ outbound: { ...perfectLeg(), stops: 1, selfTransfer: true } }));
+    const selfTransferReturn = computeFlightQualityScore(baseInput({ returnLeg: { ...perfectLeg(), stops: 1, selfTransfer: true } }));
+    expect(selfTransferOutbound.score).toBeLessThan(protectedResult.score);
+    expect(selfTransferReturn.score).toBeLessThan(protectedResult.score);
   });
 
   it("amplifie la pénalité self-transfer pour un profil qui ne le tolère pas (ex. FAMILLE)", () => {
-    const base = { stops: 1, totalDurationMinutes: 600, bestKnownDurationMinutes: 550, departTime: "10:00", arriveTime: "18:00", selfTransfer: true, baggageIncluded: true };
-    const tolerant = computeFlightQualityScore({ ...base, selfTransferAllowed: true });
-    const intolerant = computeFlightQualityScore({ ...base, selfTransferAllowed: false });
+    const leg: FlightLegInput = { ...perfectLeg(), stops: 1, selfTransfer: true };
+    const tolerant = computeFlightQualityScore(baseInput({ outbound: leg, selfTransferAllowed: true }));
+    const intolerant = computeFlightQualityScore(baseInput({ outbound: leg, selfTransferAllowed: false }));
     expect(intolerant.score).toBeLessThan(tolerant.score);
   });
 
   it("pénalise davantage les escales au-delà du maximum toléré par le profil", () => {
-    const base = { stops: 3, totalDurationMinutes: 700, bestKnownDurationMinutes: 650, departTime: "10:00", arriveTime: "18:00", selfTransfer: false, baggageIncluded: true };
-    const dealHunter = computeFlightQualityScore({ ...base, maxStopsPreferred: 3 }); // DEAL_HUNTER tolère 3 escales
-    const famille = computeFlightQualityScore({ ...base, maxStopsPreferred: 1 }); // FAMILLE tolère 1 escale
+    const leg: FlightLegInput = { ...perfectLeg(), stops: 3 };
+    const dealHunter = computeFlightQualityScore(baseInput({ outbound: leg, maxStopsPreferred: 3 }));
+    const famille = computeFlightQualityScore(baseInput({ outbound: leg, maxStopsPreferred: 1 }));
     expect(famille.score).toBeLessThan(dealHunter.score);
   });
 
   it("pénalise un départ hors de la fenêtre horaire du profil actif", () => {
-    const base = { stops: 0, totalDurationMinutes: 300, bestKnownDurationMinutes: 300, arriveTime: "12:00", selfTransfer: false, baggageIncluded: true };
-    const withinWindow = computeFlightQualityScore({ ...base, departTime: "08:00", earliestDeparture: "07:00", latestDeparture: "21:00" });
-    const outsideWindow = computeFlightQualityScore({ ...base, departTime: "05:00", earliestDeparture: "07:00", latestDeparture: "21:00" });
+    const withinWindow = computeFlightQualityScore(
+      baseInput({ outbound: { ...perfectLeg(), departTime: "08:00" }, earliestDeparture: "07:00", latestDeparture: "21:00" })
+    );
+    const outsideWindow = computeFlightQualityScore(
+      baseInput({ outbound: { ...perfectLeg(), departTime: "05:00" }, earliestDeparture: "07:00", latestDeparture: "21:00" })
+    );
     expect(outsideWindow.score).toBeLessThan(withinWindow.score);
   });
 
   it("pénalise une correspondance trop courte par rapport au minimum du profil", () => {
-    const base = { stops: 1, totalDurationMinutes: 400, bestKnownDurationMinutes: 380, departTime: "10:00", arriveTime: "16:00", selfTransfer: false, baggageIncluded: true };
-    const tight = computeFlightQualityScore({ ...base, layoverMinutes: 30, minLayoverMinutes: 60 });
-    const comfortable = computeFlightQualityScore({ ...base, layoverMinutes: 90, minLayoverMinutes: 60 });
+    const tight = computeFlightQualityScore(baseInput({ outbound: { ...perfectLeg(), stops: 1, layoverMinutes: 30 }, minLayoverMinutes: 60 }));
+    const comfortable = computeFlightQualityScore(baseInput({ outbound: { ...perfectLeg(), stops: 1, layoverMinutes: 90 }, minLayoverMinutes: 60 }));
     expect(tight.score).toBeLessThan(comfortable.score);
   });
 
   it("pénalise une correspondance trop longue seulement si le profil le demande (penalizeLongLayover)", () => {
-    const base = { stops: 1, totalDurationMinutes: 600, bestKnownDurationMinutes: 380, departTime: "10:00", arriveTime: "16:00", selfTransfer: false, baggageIncluded: true, layoverMinutes: 400, maxLayoverMinutes: 180 };
-    const dealHunter = computeFlightQualityScore({ ...base, penalizeLongLayover: false }); // tolère les longues attentes
-    const famille = computeFlightQualityScore({ ...base, penalizeLongLayover: true });
+    const leg: FlightLegInput = { ...perfectLeg(), stops: 1, layoverMinutes: 400 };
+    const dealHunter = computeFlightQualityScore(baseInput({ outbound: leg, maxLayoverMinutes: 180, penalizeLongLayover: false }));
+    const famille = computeFlightQualityScore(baseInput({ outbound: leg, maxLayoverMinutes: 180, penalizeLongLayover: true }));
     expect(famille.score).toBeLessThan(dealHunter.score);
   });
 
   it("pénalise un horaire dans la plage interdite (section 14), même avec un vol direct par ailleurs correct", () => {
-    const base = { stops: 0, totalDurationMinutes: 300, bestKnownDurationMinutes: 300, arriveTime: "10:00", selfTransfer: false, baggageIncluded: true };
-    const forbidden = computeFlightQualityScore({ ...base, departTime: "02:00", forbiddenHoursStart: "00:00", forbiddenHoursEnd: "05:00" });
-    const allowed = computeFlightQualityScore({ ...base, departTime: "09:00", forbiddenHoursStart: "00:00", forbiddenHoursEnd: "05:00" });
+    const forbidden = computeFlightQualityScore(
+      baseInput({ outbound: { ...perfectLeg(), departTime: "02:00" }, forbiddenHoursStart: "00:00", forbiddenHoursEnd: "05:00" })
+    );
+    const allowed = computeFlightQualityScore(
+      baseInput({ outbound: { ...perfectLeg(), departTime: "09:00" }, forbiddenHoursStart: "00:00", forbiddenHoursEnd: "05:00" })
+    );
     expect(forbidden.score).toBeLessThan(allowed.score);
   });
 
   it("gère une plage interdite qui chevauche minuit", () => {
-    const base = { stops: 0, totalDurationMinutes: 300, bestKnownDurationMinutes: 300, arriveTime: "10:00", selfTransfer: false, baggageIncluded: true };
-    const withinOvernight = computeFlightQualityScore({ ...base, departTime: "23:30", forbiddenHoursStart: "22:00", forbiddenHoursEnd: "06:00" });
-    const outsideOvernight = computeFlightQualityScore({ ...base, departTime: "12:00", forbiddenHoursStart: "22:00", forbiddenHoursEnd: "06:00" });
+    const withinOvernight = computeFlightQualityScore(
+      baseInput({ outbound: { ...perfectLeg(), departTime: "23:30" }, forbiddenHoursStart: "22:00", forbiddenHoursEnd: "06:00" })
+    );
+    const outsideOvernight = computeFlightQualityScore(
+      baseInput({ outbound: { ...perfectLeg(), departTime: "12:00" }, forbiddenHoursStart: "22:00", forbiddenHoursEnd: "06:00" })
+    );
     expect(withinOvernight.score).toBeLessThan(outsideOvernight.score);
   });
 });

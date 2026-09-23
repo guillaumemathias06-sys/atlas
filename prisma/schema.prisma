@@ -118,11 +118,21 @@ model PriceObservation {
   totalDurationMinutes Int
   outboundDurationMinutes Int?
   inboundDurationMinutes  Int?
-  layoverMinutes Int @default(0) // durée cumulée des escales, utilisée par le profil de voyage actif
+  layoverMinutes Int @default(0) // durée cumulée des escales à l'ALLER
+  departTime     String? // HH:mm, départ à l'aller
+  arriveTime     String? // HH:mm, arrivée à l'aller
   baggageIncluded Boolean @default(false)
   cabinClass     String   @default("ECONOMY")
-  selfTransfer   Boolean  @default(false) // correspondance non protégée
+  selfTransfer   Boolean  @default(false) // correspondance non protégée à l'ALLER
   provider       String   @default("mock")
+
+  // Tronçon RETOUR — un bon deal est un aller-retour, pas juste un bel aller (section 25).
+  // Défauts = valeurs de l'aller pour compatibilité avec les observations existantes.
+  returnStops         Int     @default(0)
+  returnLayoverMinutes Int    @default(0)
+  returnSelfTransfer  Boolean @default(false)
+  returnDepartTime    String? // HH:mm
+  returnArriveTime    String? // HH:mm
   raw            String?  // JSON brut du provider (debug)
 
   observedAt     DateTime @default(now())

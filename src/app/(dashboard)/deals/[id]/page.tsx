@@ -68,8 +68,11 @@ export default async function DealDetailPage({ params }: { params: { id: string 
             {new Date(obs.departDate).toLocaleDateString("fr-FR")} → {new Date(obs.returnDate).toLocaleDateString("fr-FR")} · {obs.tripLengthDays} jours · {obs.airline}
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            <Badge tone={obs.stops === 0 ? "good" : "neutral"}>{obs.stops === 0 ? "Vol direct" : `${obs.stops} escale(s)`}</Badge>
-            <Badge tone={obs.selfTransfer ? "danger" : "neutral"}>{obs.selfTransfer ? "Correspondance non protégée" : "Correspondance protégée"}</Badge>
+            <Badge tone={obs.stops === 0 ? "good" : "neutral"}>Aller : {obs.stops === 0 ? "direct" : `${obs.stops} escale(s)`}</Badge>
+            <Badge tone={obs.returnStops === 0 ? "good" : "neutral"}>Retour : {obs.returnStops === 0 ? "direct" : `${obs.returnStops} escale(s)`}</Badge>
+            <Badge tone={obs.selfTransfer || obs.returnSelfTransfer ? "danger" : "neutral"}>
+              {obs.selfTransfer || obs.returnSelfTransfer ? "Correspondance non protégée" : "Correspondances protégées"}
+            </Badge>
             <Badge tone={obs.baggageIncluded ? "good" : "neutral"}>{obs.baggageIncluded ? "Bagage inclus" : "Bagage non inclus"}</Badge>
             <Badge tone="neutral">{obs.cabinClass}</Badge>
             {conflict && <Badge tone="danger">⚠ Chevauche une période bloquée au calendrier</Badge>}
@@ -84,6 +87,38 @@ export default async function DealDetailPage({ params }: { params: { id: string 
 
       <Card className="mt-6 p-5">
         <p className="text-sm leading-relaxed text-atlas-text">{deal.explanation}</p>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader title="Aller / Retour" subtitle="Un bon deal est un aller-retour — les deux tronçons comptent (section 25)" />
+        <div className="grid grid-cols-1 divide-y divide-atlas-border md:grid-cols-2 md:divide-x md:divide-y-0">
+          <div className="p-5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-atlas-muted">
+              Aller — {new Date(obs.departDate).toLocaleDateString("fr-FR")}
+            </p>
+            <p className="font-display text-xl font-semibold text-atlas-text">
+              {obs.departTime ?? "—"} <span className="text-atlas-muted">→</span> {obs.arriveTime ?? "—"}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Badge tone={obs.stops === 0 ? "good" : "neutral"}>{obs.stops === 0 ? "Direct" : `${obs.stops} escale(s)`}</Badge>
+              {obs.stops > 0 && <Badge tone="neutral">{Math.round(obs.layoverMinutes / 60)}h{obs.layoverMinutes % 60} d'escale</Badge>}
+              {obs.selfTransfer && <Badge tone="danger">Non protégée</Badge>}
+            </div>
+          </div>
+          <div className="p-5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-atlas-muted">
+              Retour — {new Date(obs.returnDate).toLocaleDateString("fr-FR")}
+            </p>
+            <p className="font-display text-xl font-semibold text-atlas-text">
+              {obs.returnDepartTime ?? "—"} <span className="text-atlas-muted">→</span> {obs.returnArriveTime ?? "—"}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Badge tone={obs.returnStops === 0 ? "good" : "neutral"}>{obs.returnStops === 0 ? "Direct" : `${obs.returnStops} escale(s)`}</Badge>
+              {obs.returnStops > 0 && <Badge tone="neutral">{Math.round(obs.returnLayoverMinutes / 60)}h{obs.returnLayoverMinutes % 60} d'escale</Badge>}
+              {obs.returnSelfTransfer && <Badge tone="danger">Non protégée</Badge>}
+            </div>
+          </div>
+        </div>
       </Card>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">

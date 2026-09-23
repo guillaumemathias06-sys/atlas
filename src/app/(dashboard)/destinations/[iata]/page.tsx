@@ -156,6 +156,7 @@ export default async function DestinationDetailPage({ params }: { params: { iata
                   returnDate: d.observation.returnDate,
                   tripLengthDays: d.observation.tripLengthDays,
                   stops: d.observation.stops,
+                  returnStops: d.observation.returnStops,
                   airline: d.observation.airline,
                 }}
               />

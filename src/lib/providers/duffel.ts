@@ -61,26 +61,32 @@ const CABIN_MAP: Record<string, CabinClass> = {
   first: "FIRST",
 };
 
+/** Calcule stops/durée/escale/horaires pour UN tronçon (aller ou retour). */
+function sliceStats(slice: DuffelSlice) {
+  const firstSeg = slice.segments[0]!;
+  const lastSeg = slice.segments[slice.segments.length - 1]!;
+  const totalMinutes = parseIso8601DurationMinutes(slice.duration);
+  const segmentsSumMinutes = slice.segments.reduce((sum, s) => sum + parseIso8601DurationMinutes(s.duration), 0);
+  const layoverMinutes = Math.max(0, totalMinutes - segmentsSumMinutes);
+  return { stops: slice.segments.length - 1, totalMinutes, layoverMinutes, departTime: hhmm(firstSeg.departing_at), arriveTime: hhmm(lastSeg.arriving_at), firstSeg };
+}
+
 /**
- * Convertit une offre Duffel en FlightOffer ATLAS. Sémantique alignée sur le provider
- * mock : les champs de durée/horaires/escales portent sur le tronçon ALLER uniquement
- * (slices[0]) — cohérent avec les règles de durée intelligente (section 4) qui évaluent
- * le temps de trajet pour REJOINDRE la destination, pas le total aller-retour cumulé.
+ * Convertit une offre Duffel en FlightOffer ATLAS. Un bon deal est un aller-retour : les
+ * deux tronçons sont évalués indépendamment (section 25 — "comprendre pourquoi ATLAS
+ * recommande ou rejette"), pas seulement l'aller.
  */
 export function mapDuffelOffer(offer: DuffelOffer): FlightOffer | null {
-  const outbound = offer.slices[0];
-  if (!outbound || outbound.segments.length === 0) return null;
+  const outboundSlice = offer.slices[0];
+  if (!outboundSlice || outboundSlice.segments.length === 0) return null;
+  const outbound = sliceStats(outboundSlice);
 
-  const firstSeg = outbound.segments[0]!;
-  const lastSeg = outbound.segments[outbound.segments.length - 1]!;
-  const outboundMinutes = parseIso8601DurationMinutes(outbound.duration);
-  const segmentsSumMinutes = outbound.segments.reduce((sum, s) => sum + parseIso8601DurationMinutes(s.duration), 0);
-  const layoverMinutes = Math.max(0, outboundMinutes - segmentsSumMinutes);
+  const returnSlice = offer.slices[1];
+  // Un tronçon retour absent (recherche one-way) retombe sur les valeurs de l'aller plutôt
+  // que d'inventer un retour arbitraire — ATLAS ne fait aujourd'hui que des recherches A/R.
+  const inbound = returnSlice && returnSlice.segments.length > 0 ? sliceStats(returnSlice) : outbound;
 
-  const inbound = offer.slices[1];
-  const inboundMinutes = inbound ? parseIso8601DurationMinutes(inbound.duration) : outboundMinutes;
-
-  const pax = firstSeg.passengers[0];
+  const pax = outbound.firstSeg.passengers[0];
   const baggageIncluded = pax?.baggages?.some((b) => b.type === "checked" && b.quantity > 0) ?? false;
   const cabinClass = CABIN_MAP[pax?.cabin_class ?? "economy"] ?? "ECONOMY";
 
@@ -88,19 +94,26 @@ export function mapDuffelOffer(offer: DuffelOffer): FlightOffer | null {
     priceEUR: Number(offer.total_amount),
     currency: offer.total_currency,
     airline: offer.owner.name,
-    stops: outbound.segments.length - 1,
-    totalDurationMinutes: outboundMinutes,
-    outboundDurationMinutes: outboundMinutes,
-    inboundDurationMinutes: inboundMinutes,
-    layoverMinutes,
+    provider: "duffel",
     baggageIncluded,
     cabinClass,
+
+    stops: outbound.stops,
+    totalDurationMinutes: outbound.totalMinutes,
+    outboundDurationMinutes: outbound.totalMinutes,
+    layoverMinutes: outbound.layoverMinutes,
     // Duffel vend des correspondances protégées sur une même offre — pas de self-transfer
-    // (billets séparés) dans ce flux. Voir docs/providers.md pour l'évolution future.
+    // (billets séparés) dans ce flux, aller comme retour. Voir docs/providers.md.
     selfTransfer: false,
-    departTime: hhmm(firstSeg.departing_at),
-    arriveTime: hhmm(lastSeg.arriving_at),
-    provider: "duffel",
+    departTime: outbound.departTime,
+    arriveTime: outbound.arriveTime,
+
+    returnStops: inbound.stops,
+    inboundDurationMinutes: inbound.totalMinutes,
+    returnLayoverMinutes: inbound.layoverMinutes,
+    returnSelfTransfer: false,
+    returnDepartTime: inbound.departTime,
+    returnArriveTime: inbound.arriveTime,
   };
 }
 
