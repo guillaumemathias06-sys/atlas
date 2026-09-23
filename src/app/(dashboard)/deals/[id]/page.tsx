@@ -176,10 +176,10 @@ export default async function DealDetailPage({ params }: { params: { id: string 
         <Card>
           <CardHeader title="Pourquoi ce score" subtitle="Décomposition ATLAS Score" />
           <div className="px-5 py-2">
-            <ScoreRow label="Fare Intelligence" score={deal.fareScore} />
-            <ScoreRow label="Season" score={deal.seasonScore} />
-            <ScoreRow label="Experience" score={deal.experienceScore} />
-            <ScoreRow label="Flight Quality" score={deal.flightQualityScore} />
+            <ScoreRow label="Intelligence tarifaire" score={deal.fareScore} />
+            <ScoreRow label="Saison" score={deal.seasonScore} />
+            <ScoreRow label="Expérience" score={deal.experienceScore} />
+            <ScoreRow label="Qualité du vol" score={deal.flightQualityScore} />
             <ScoreRow label="Adéquation durée" score={deal.durationFitScore} />
             <ScoreRow label="Préférences" score={deal.preferenceScore} />
           </div>

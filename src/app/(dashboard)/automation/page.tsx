@@ -95,7 +95,7 @@ export default async function AutomationPage() {
               <input type="number" name="minAtlasScore" defaultValue={policy.minAtlasScore} className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-atlas-muted">Season Score minimum</span>
+              <span className="text-xs font-medium text-atlas-muted">Score saison minimum</span>
               <input type="number" name="minSeasonScore" defaultValue={policy.minSeasonScore} className={`${inputClass} mt-1`} />
             </label>
             <label className="block">
