@@ -2,14 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Card, CardHeader, Badge, EmptyState, scoreTone } from "@/components/ui";
 import { WORLD_MAP_PATHS, WORLD_MAP_VIEWBOX } from "@/components/worldMapPaths";
+import { project } from "@/lib/geo/projection";
 
 export const dynamic = "force-dynamic";
-
-function project(lat: number, lon: number) {
-  const x = ((lon + 180) / 360) * 100;
-  const y = ((90 - lat) / 180) * 100;
-  return { x, y };
-}
 
 export default async function MapPage() {
   const bestDeals = await prisma.deal.findMany({
@@ -51,7 +46,7 @@ export default async function MapPage() {
             <svg viewBox="0 0 100 50" className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
               <defs>
                 <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="1.1" result="blur" />
                   <feMerge>
                     <feMergeNode in="blur" />
                     <feMergeNode in="blur" />
@@ -73,7 +68,7 @@ export default async function MapPage() {
                   fillOpacity="0.06"
                   stroke="#3fd6c9"
                   strokeOpacity="0.65"
-                  strokeWidth="2.2"
+                  strokeWidth="1"
                   filter="url(#neonGlow)"
                   dangerouslySetInnerHTML={{ __html: WORLD_MAP_PATHS }}
                 />
