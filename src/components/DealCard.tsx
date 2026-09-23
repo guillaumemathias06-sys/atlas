@@ -16,6 +16,7 @@ export interface DealCardData {
   returnDate: Date;
   tripLengthDays: number;
   stops: number;
+  returnStops: number;
   airline: string;
 }
 
@@ -27,7 +28,7 @@ export function DealCard({ deal }: { deal: DealCardData }) {
         <div>
           <p className="font-display text-lg font-semibold text-atlas-text">{deal.destinationCity}</p>
           <p className="text-xs text-atlas-muted">
-            {deal.originIata} → {deal.destinationIata} · {deal.tripLengthDays}j · {deal.stops === 0 ? "direct" : `${deal.stops} escale(s)`}
+            {deal.originIata} → {deal.destinationIata} · {deal.tripLengthDays}j · aller {deal.stops === 0 ? "direct" : `${deal.stops} esc.`} · retour {deal.returnStops === 0 ? "direct" : `${deal.returnStops} esc.`}
           </p>
         </div>
         <ScoreRing score={Math.round(deal.atlasScore)} size={56} />

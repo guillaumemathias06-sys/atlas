@@ -60,6 +60,43 @@ function priceFromDistance(distanceKm: number, rand: () => number): number {
   return Math.round(base * noise);
 }
 
+interface MockLeg {
+  stops: number;
+  durationMinutes: number;
+  layoverMinutes: number;
+  selfTransfer: boolean;
+  departTime: string;
+  arriveTime: string;
+}
+
+/**
+ * Génère UN tronçon (aller ou retour) de façon indépendante — un vol peut avoir un aller
+ * direct et un retour à 2 escales, ou l'inverse. `roughBadLuck` permet d'injecter
+ * volontairement un tronçon nettement moins bon (retour pénible malgré un bel aller),
+ * pour que le scoring ait de vrais cas à pénaliser (section 25/27 : cas limites testables).
+ */
+function generateLeg(rand: () => number, distanceKm: number, roughBadLuck = false): MockLeg {
+  const badLuckStopsBoost = roughBadLuck ? 1 : 0;
+  const stops = Math.min(3, (distanceKm > 6000 ? Math.floor(rand() * 3) : Math.floor(rand() * 2)) + badLuckStopsBoost);
+  const flightDurationMinutes = Math.round((distanceKm / 800) * 60); // ~800km/h croisière
+  const layoverBase = stops > 0 ? Math.round(60 + rand() * 300) : 0;
+  const layoverMinutes = roughBadLuck ? Math.round(layoverBase * 1.8 + 120) : layoverBase;
+  const durationMinutes = flightDurationMinutes + layoverMinutes;
+  const selfTransfer = stops > 0 && rand() < (roughBadLuck ? 0.45 : 0.15);
+
+  const departHour = Math.floor(rand() * 24);
+  const arriveHour = (departHour + Math.floor(durationMinutes / 60)) % 24;
+
+  return {
+    stops,
+    durationMinutes,
+    layoverMinutes,
+    selfTransfer,
+    departTime: `${String(departHour).padStart(2, "0")}:${rand() > 0.5 ? "30" : "00"}`,
+    arriveTime: `${String(arriveHour).padStart(2, "0")}:${rand() > 0.5 ? "30" : "00"}`,
+  };
+}
+
 export class MockFlightProvider implements FlightProvider {
   readonly name = "mock";
 
@@ -83,14 +120,12 @@ export class MockFlightProvider implements FlightProvider {
       // La meilleure offre (i===0) reçoit un petit bonus de rareté
       if (i === 0) price = Math.round(price * 0.94);
 
-      const stops = distanceKm > 6000 ? Math.floor(rand() * 3) : Math.floor(rand() * 2);
-      const flightDurationMinutes = Math.round((distanceKm / 800) * 60); // ~800km/h croisière
-      const layoverMinutes = stops > 0 ? Math.round(60 + rand() * 300) : 0;
-      const totalDurationMinutes = flightDurationMinutes + layoverMinutes;
-      const selfTransfer = stops > 0 && rand() < 0.15;
+      // ~1 offre sur 6 illustre volontairement un "bel aller, mauvais retour" — pour que le
+      // Flight Quality Score ait un vrai cas d'aller-retour déséquilibré à pénaliser.
+      const badReturn = rand() < 0.16;
 
-      const departHour = Math.floor(rand() * 24);
-      const arriveHour = (departHour + Math.floor(totalDurationMinutes / 60)) % 24;
+      const outbound = generateLeg(rand, distanceKm);
+      const inbound = generateLeg(rand, distanceKm, badReturn);
 
       const cabinClasses: CabinClass[] = ["ECONOMY", "ECONOMY", "ECONOMY", "PREMIUM_ECONOMY"];
       const cabinClass = query.cabinClass ?? cabinClasses[Math.floor(rand() * cabinClasses.length)]!;
@@ -99,17 +134,24 @@ export class MockFlightProvider implements FlightProvider {
         priceEUR: Math.max(29, price),
         currency: "EUR",
         airline: AIRLINES[Math.floor(rand() * AIRLINES.length)]!,
-        stops,
-        totalDurationMinutes,
-        outboundDurationMinutes: Math.round(totalDurationMinutes * 0.5),
-        inboundDurationMinutes: Math.round(totalDurationMinutes * 0.5),
-        layoverMinutes,
+        provider: this.name,
         baggageIncluded: rand() > 0.4,
         cabinClass,
-        selfTransfer,
-        departTime: `${String(departHour).padStart(2, "0")}:${rand() > 0.5 ? "30" : "00"}`,
-        arriveTime: `${String(arriveHour).padStart(2, "0")}:${rand() > 0.5 ? "30" : "00"}`,
-        provider: this.name,
+
+        stops: outbound.stops,
+        totalDurationMinutes: outbound.durationMinutes,
+        outboundDurationMinutes: outbound.durationMinutes,
+        layoverMinutes: outbound.layoverMinutes,
+        selfTransfer: outbound.selfTransfer,
+        departTime: outbound.departTime,
+        arriveTime: outbound.arriveTime,
+
+        returnStops: inbound.stops,
+        inboundDurationMinutes: inbound.durationMinutes,
+        returnLayoverMinutes: inbound.layoverMinutes,
+        returnSelfTransfer: inbound.selfTransfer,
+        returnDepartTime: inbound.departTime,
+        returnArriveTime: inbound.arriveTime,
       });
     }
 

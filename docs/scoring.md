@@ -43,6 +43,12 @@ connu sur la route, les horaires extrêmes, les correspondances non protégées
 (self-transfer) et l'absence de bagage inclus. Un vol à 35h de trajet ne peut jamais
 obtenir un bon score, même à prix cassé.
 
+**Aller et retour sont évalués indépendamment, le pire des deux gouverne le score** — un
+excellent aller ne masque jamais un mauvais retour, ni l'inverse. C'est une exigence
+explicite : un deal, c'est un aller-retour dans son ensemble, pas juste la moitié la plus
+flatteuse. Les raisons affichées précisent toujours quel tronçon pose problème
+("Aller : 2 escales", "Retour : correspondance non protégée"...).
+
 Les seuils (fenêtre horaire, escales tolérées, sévérité du self-transfer) sont dérivés du
 **profil de voyage actif** (section 13) : FAMILLE pénalise fortement le self-transfer et
 tolère peu d'escales, DEAL_HUNTER est permissif. Sans profil actif, des valeurs par défaut

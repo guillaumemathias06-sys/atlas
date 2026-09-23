@@ -32,7 +32,9 @@ quand pertinent), `[ ]` = à faire. Mis à jour à chaque session de travail.
 - [x] Fare Score (comparaison à l'historique de la route, jamais un plafond absolu)
 - [x] Season Score (climat mensuel, mousson, risque cyclonique, affluence)
 - [x] Experience Score (événements exceptionnels, tolérance de dates variable)
-- [x] Flight Quality Score (escales, horaires, self-transfer, durée vs meilleur connu)
+- [x] Flight Quality Score (escales, horaires, self-transfer, durée vs meilleur connu) —
+      évalue ALLER et RETOUR indépendamment, retient le pire des deux (23/09/2026, retour
+      explicite de Guillaume : "un bon deal c'est un aller-retour")
 - [x] Duration Fit Score (règles de durée intelligente, section 4)
 - [x] Preference Score (destinations prioritaires, régions favorites, compagnies bannies,
       température souhaitée, tolérance à la pluie, importance de la plage, bagages, classe

@@ -11,20 +11,29 @@ export interface FlightSearchQuery {
 }
 
 export interface FlightOffer {
-  priceEUR: number;
+  priceEUR: number; // prix TOTAL aller-retour
   currency: string;
   airline: string;
-  stops: number;
-  totalDurationMinutes: number;
-  outboundDurationMinutes: number;
-  inboundDurationMinutes: number;
-  layoverMinutes: number; // durée cumulée des escales, 0 si vol direct
+  provider: string;
   baggageIncluded: boolean;
   cabinClass: CabinClass;
+
+  // Tronçon ALLER
+  stops: number;
+  totalDurationMinutes: number; // alias historique = durée du tronçon aller (voir docs/scoring.md)
+  outboundDurationMinutes: number;
+  layoverMinutes: number; // durée cumulée des escales à l'aller, 0 si vol direct
   selfTransfer: boolean;
-  departTime: string; // HH:mm
-  arriveTime: string; // HH:mm
-  provider: string;
+  departTime: string; // HH:mm, départ à l'aller
+  arriveTime: string; // HH:mm, arrivée à l'aller
+
+  // Tronçon RETOUR — un bon deal est un aller-retour, pas juste un bel aller (section 25).
+  returnStops: number;
+  inboundDurationMinutes: number;
+  returnLayoverMinutes: number;
+  returnSelfTransfer: boolean;
+  returnDepartTime: string; // HH:mm, départ au retour
+  returnArriveTime: string; // HH:mm, arrivée au retour
 }
 
 export interface FlightSearchResult {

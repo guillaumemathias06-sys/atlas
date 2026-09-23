@@ -44,6 +44,7 @@ export default async function DashboardPage() {
     returnDate: d.observation.returnDate,
     tripLengthDays: d.observation.tripLengthDays,
     stops: d.observation.stops,
+    returnStops: d.observation.returnStops,
     airline: d.observation.airline,
   }));
 

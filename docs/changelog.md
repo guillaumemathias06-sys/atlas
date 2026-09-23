@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-09-23 (suite 6) — Qualité du retour enfin prise en compte
+
+Retour de Guillaume, cœur du produit : "un bon deal c'est un aller-retour... si l'aller
+est super intéressant mais que le retour coûte le triple, ça ne m'intéresse pas." Jusqu'ici,
+Flight Quality Score n'évaluait que le tronçon ALLER (escales, horaires, correspondance) —
+un retour épouvantable pouvait se cacher derrière un excellent aller.
+
+- `FlightOffer` (et `PriceObservation`) porte désormais des champs RETOUR distincts :
+  `returnStops`, `returnLayoverMinutes`, `returnSelfTransfer`, `returnDepartTime`,
+  `returnArriveTime` — en plus de `departTime`/`arriveTime` pour l'aller, qui n'étaient
+  jamais persistés avant (autre trou comblé au passage).
+- `computeFlightQualityScore` refondu (`src/lib/scoring/flightQualityScore.ts`) : évalue
+  aller et retour indépendamment via la même règle (`evaluateLeg`), puis **retient le pire
+  des deux tronçons** comme score de base — un bel aller ne masque plus jamais un mauvais
+  retour, et vice versa. Les raisons sont préfixées "Aller :"/"Retour :" pour rester
+  transparent (section 11).
+- Mock provider : génère désormais aller et retour indépendamment (`generateLeg`), avec
+  ~1 offre sur 6 illustrant volontairement un retour nettement moins bon que l'aller —
+  pour que ce cas limite soit visible en démo, pas seulement en test.
+- Duffel provider : extrait les vraies stats du tronçon retour (`slices[1]`) au lieu de
+  ne regarder que l'aller.
+- Nouvelle carte "Aller / Retour" sur le détail d'un deal (horaires, escales, correspondance
+  de chaque tronçon, côte à côte). `DealCard` (dashboard/liste) affiche désormais
+  "aller X esc. · retour Y esc.".
+- 2 nouveaux tests, dont un qui vérifie explicitement le cas décrit par Guillaume (87 au
+  total). Vérifié dans le navigateur.
+
 ## 2026-09-23 (suite 5) — Calibration de la projection + trait aminci
 
 Retour de Guillaume sur une capture en pleine largeur (pas la même taille que mon aperçu
