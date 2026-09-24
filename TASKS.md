@@ -178,13 +178,15 @@ Le développement se termine par une mise en ligne réelle (décision de Guillau
 
 ## Actions utilisateur en attente (rien à retenter côté code)
 
-1. **Clé API Duffel** (ou Amadeus/Kiwi) pour sortir du mode simulation — gratuit en
-   sandbox. Créer un compte sur duffel.com, générer une clé, la mettre dans `.env` sous
-   `DUFFEL_API_KEY`.
-2. **Docker/PostgreSQL** — optionnel, seulement si vous voulez migrer de SQLite vers
-   PostgreSQL localement plutôt qu'en production.
-3. **Google Calendar OAuth** — seulement quand vous voudrez la synchronisation calendrier
+1. **Clé API météo/saisonnalité** (OpenWeather ou équivalent) — seulement si vous voulez
+   remplacer les données climatiques statiques du Season Score par une source en temps
+   réel (Phase 5).
+2. **Google Calendar OAuth** — seulement quand vous voudrez la synchronisation calendrier
    externe (Phase 7).
+3. **Partenaire de réservation + moyen de paiement** — seulement si vous voulez qu'ATLAS
+   réserve réellement (Phase 7, Booking API) — hors périmètre tant que non demandé.
 
-Aucune de ces actions ne bloque le reste du projet : tout le reste continue d'avancer en
-mode simulation.
+Duffel est en production depuis le 23/09/2026 (clé live, plafond 70€/mois codé en dur).
+Aucune de ces actions ne bloque le reste du projet : le moteur est en pause volontaire
+pendant la suite du développement (décision de Guillaume, 24/09/2026), pas en attente
+d'une clé.
